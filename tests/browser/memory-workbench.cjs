@@ -15,10 +15,17 @@ async function run() {
     const page = await context.newPage();
     page.setDefaultTimeout(120000);
     const errors = [];
+    let blockedFallbackFonts = 0;
     const responses = [];
-    const redact = value=>value.replace(/\/components\/assets\/[^/]+/g,'/components/assets/[token]').replace(/\/components\/[^/]+\/(request|renew)/g,'/components/[token]/$1');
+    const redact = value=>value.replace(/\/(components|frontend)\/assets\/[^/]+/g,'/$1/assets/[token]').replace(/\/(components|frontend)\/[^/]+\/(request|renew)/g,'/$1/[token]/$2');
     page.on('pageerror',error=>errors.push(redact(error.message)));
-    page.on('console',message=>{if(message.type()==='error')errors.push(redact(message.text()));});
+    page.on('console',message=>{
+      if(message.type()!=='error')return;
+      const text=message.text();
+      // 沙箱继续禁止 Compose 的外部回退字体；单独记录已有警告，不掩盖其他错误。
+      if(text.includes('https://fonts.gstatic.com/s/notosanssc/')&&text.includes('Content Security Policy'))blockedFallbackFonts++;
+      else errors.push(redact(text));
+    });
     page.on('response',response=>{
       if(response.status()>=400) errors.push(`${redact(new URL(response.url()).pathname)}: HTTP ${response.status()}`);
       if(response.url().endsWith('/request')&&response.ok()) responses.push(response.json().then(value=>{
@@ -58,23 +65,41 @@ async function run() {
       assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
       assert.equal(await frame.locator('body').evaluate(()=>window.__memoryLayoutMarker),marker);
       await viewportScreenshot(page,path.join(directory,`${name}.png`));
-      const create = await frame.getByRole('button',{name:'新建记忆',exact:true}).first().boundingBox();
-      await page.mouse.click(create.x+create.width/2,create.y+create.height/2);
-      const cancel = frame.getByRole('button',{name:'取消',exact:true});
-      await cancel.waitFor();
+      layouts.push({name,viewport,...bounds,coloredCanvasPixels:colored});
+    }
+    await page.setViewportSize(viewports[0][1]);
+    await page.waitForTimeout(600);
+    await frame.getByRole('button',{name:'新建记忆',exact:true}).first().click({force:true});
+    const cancel = frame.getByRole('button',{name:'取消',exact:true});
+    await cancel.waitFor({timeout:10000});
+    const dialogs = [];
+    for(const [name,viewport] of viewports) {
+      await page.setViewportSize(viewport);
+      await page.waitForTimeout(600);
       const cancelBounds = await cancel.boundingBox();
       const frameBounds = await iframe.boundingBox();
       assert(cancelBounds.y>=frameBounds.y&&cancelBounds.y+cancelBounds.height<=frameBounds.y+frameBounds.height,'Dialog actions must remain inside the plugin');
-      await page.waitForTimeout(300);
       await viewportScreenshot(page,path.join(directory,`${name}-dialog.png`));
-      await page.mouse.click(cancelBounds.x+cancelBounds.width/2,cancelBounds.y+cancelBounds.height/2);
-      await cancel.waitFor({state:'hidden'});
-      layouts.push({name,viewport,...bounds,coloredCanvasPixels:colored,dialogCancelled:true});
+      dialogs.push({name,cancelBounds,frameBounds});
     }
+    const canvas = frame.locator('canvas').first();
+    const beforeScroll = PNG.sync.read(await canvas.screenshot());
+    const area = await iframe.boundingBox();
+    await page.mouse.move(area.x+area.width/2,area.y+area.height/2);
+    await page.mouse.wheel(0,1000);
+    await page.waitForTimeout(600);
+    const afterScroll = PNG.sync.read(await canvas.screenshot());
+    let changedPixels = 0;
+    for(let i=0;i<beforeScroll.data.length;i+=4)if(beforeScroll.data.readUInt32BE(i)!==afterScroll.data.readUInt32BE(i))changedPixels++;
+    assert(changedPixels>100,'Short dialog must scroll its form content');
+    await viewportScreenshot(page,path.join(directory,'mobile-landscape-dialog-scrolled.png'));
+    await cancel.click({force:true});
+    await cancel.waitFor({state:'hidden',timeout:10000});
     await Promise.all(responses);
     assert.deepEqual(errors,[]);
-    writeFileSync(path.join(directory,'report.json'),JSON.stringify({base,layouts,errors},null,2));
-    console.log(JSON.stringify({base,layouts,errors}));
+    const report={base,layouts,dialogs,dialogCancelled:true,dialogScrollChangedPixels:changedPixels,blockedFallbackFonts,errors};
+    writeFileSync(path.join(directory,'report.json'),JSON.stringify(report,null,2));
+    console.log(JSON.stringify(report));
   } finally {await closeBrowser(browser);}
 }
 run().catch(error=>{console.error(error.message.split('Call log:')[0]);process.exitCode=1;});
