@@ -13,6 +13,7 @@ let ticket = config.token;
 let epoch = 0;
 let restoring = null;
 const page = frame.closest("[data-aio-page-active]");
+if (page?.dataset.aioPagePreparing === 'true') assetURL.searchParams.set('__aio_prepare', '1');
 const lifecycle = createFrontendLifecycle(frame, config);
 const workspaceActive = () => !page || page.dataset.aioWorkspaceActive !== 'false';
 const visible = () => !document.hidden && (!page || page.dataset.aioPageActive === "true");

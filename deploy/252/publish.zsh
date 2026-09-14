@@ -52,6 +52,7 @@ print "构建 glibc 2.17 服务端"
 cargo zigbuild --release --target "$target" --no-default-features --features server
 print "构建 Web 资产"
 cargo clean -p az-ui-components --profile wasm-release --target wasm32-unknown-unknown --config 'profile.wasm-release.inherits="release"'
+rm -rf "$CARGO_TARGET_DIR/dx/aio-idea/release/web/public"
 dx build --platform web --release --debug-symbols false
 npm ci --prefix deploy --ignore-scripts --no-audit --no-fund
 node deploy/prepare-web.cjs "$CARGO_TARGET_DIR/dx/aio-idea/release/web/public"

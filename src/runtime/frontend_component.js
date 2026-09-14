@@ -5,6 +5,7 @@ const url = new URL(config.src, location.href);
 if (url.origin !== location.origin || !url.pathname.startsWith(`/api/runtime/components/assets/${config.token}/`)) throw new Error("插件资产地址无效");
 const { mountBridge } = await import('/api/runtime/components/bridge.js');
 const page = frame.closest('[data-aio-page-active]');
+if (page?.dataset.aioPagePreparing === 'true') url.searchParams.set('__aio_prepare', '1');
 const active = () => !page || page.dataset.aioWorkspaceActive !== 'false';
 let disposed = false;
 let renewing = false;
