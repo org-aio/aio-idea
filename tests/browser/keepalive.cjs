@@ -10,7 +10,7 @@ const { parse, serialize } = require('parse5');
 const output = resolve('target/keepalive-test');
 const shell = resolve('target/dx/aio-idea/release/web/public');
 const frontend = resolve(process.env.AIO_TEST_KMP_FRONTEND || '../aio-plugin-kmp-example/dist/frontend');
-const guest = readFile('src/runtime/server/frontend_guest.js', 'utf8');
+const guest = Promise.all([readFile('../aio-platform/sdk/web/lifecycle.js', 'utf8'), readFile('src/runtime/server/frontend_guest.js', 'utf8')]).then(parts => parts.join('\n'));
 const modules = readFile('src/runtime/server/vendor/es-module-shims.js');
 const assets = (async () => {
   const entries = await readdir(frontend, { recursive: true, withFileTypes: true });
@@ -22,7 +22,7 @@ const assets = (async () => {
 let fixture;
 let origin;
 const grants = new Map();
-const counts = { mount: 0, delete: 0, asset: 0, renew: 0 };
+const counts = { mount: 0, delete: 0, asset: 0, renew: 0, business: 0 };
 const screen = (id, body = { kind: 'text', title: id, content: id }) => ({
   id, label: id, scene: { id: 'community', label: '社区插件' }, menu_path: [],
   required_permission: null, body,
@@ -59,8 +59,10 @@ const server = createServer(async (req, res) => {
       const { page_id } = JSON.parse(Buffer.concat(chunks));
       const token = randomUUID().replaceAll('-', '');
       const version = fixture.catalog.page_versions[page_id];
+      let parts; try { parts = JSON.parse(version); } catch (_) { parts = [version, version, version]; }
       grants.set(token, { page_id, version, context: fixture.catalog.context }); counts.mount++;
-      return send(200, { data: { token, revision: version, generation: version, session_context: fixture.catalog.session_context, context: fixture.catalog.context, assets: await assets, src: `/api/runtime/frontend/assets/${token}/index.html` } });
+      const asset_sizes = Object.fromEntries(await Promise.all(Object.keys(await assets).map(async name => [name, (await file(frontend, name)).length])));
+      return send(200, { data: { token, revision: parts[1], generation: parts[2], session_context: fixture.catalog.session_context, context: fixture.catalog.context, assets: await assets, asset_sizes, src: `/api/runtime/frontend/assets/${token}/index.html` } });
     }
     const route = path.match(/^\/api\/runtime\/frontend\/([^/]+)(?:\/(request|renew))?$/);
     if (route) {
@@ -69,6 +71,7 @@ const server = createServer(async (req, res) => {
       const grant = grants.get(token);
       if (!grant || grant.context !== fixture.catalog.context || grant.version !== fixture.catalog.page_versions[grant.page_id]) return send(403, { error: 'Mount revoked' });
       if (action === 'renew') { counts.renew++; return res.writeHead(204).end(); }
+      counts.business++;
       return send(200, { data: { status: 200, content_type: 'application/json', body: JSON.stringify({ items: [], total: 0, completed: 0, tenantId: 'test', userId: 'tester', serverTime: '2026-09-11', storage: 'protocol-fixture' }) } });
     }
     const asset = path.match(/^\/api\/runtime\/frontend\/assets\/([^/]+)\/(.+)$/);
@@ -108,8 +111,15 @@ async function run(browser, mobile) {
   const context = await browser.newContext({ viewport: mobile ? { width: 390, height: 844 } : { width: 1440, height: 1000 } });
   const page = await context.newPage();
   const errors = [];
+  let blockedFallbackFonts = 0;
   page.on('pageerror', error => errors.push(error.message));
-  page.on('console', message => { if (message.type() === 'error') errors.push(message.text()); });
+  page.on('console', message => {
+    if (message.type() !== 'error') return;
+    const text = message.text();
+    // 夹具的 Compose 产物未携带中文回退字体，沙箱应继续阻止外部字体下载。
+    if (text.includes('https://fonts.gstatic.com/s/notosanssc/') && text.includes('Content Security Policy')) blockedFallbackFonts++;
+    else errors.push(text);
+  });
   const scene = label => page.getByRole('navigation', { name: '场景' }).getByRole('button', { name: label, exact: true }).click();
   const select = async label => {
     if (mobile) await page.getByRole('button', { name: '打开菜单', exact: true }).click();
@@ -245,6 +255,7 @@ async function run(browser, mobile) {
     await iframe.waitFor({ state: 'detached' });
     await page.waitForFunction(async () => (await caches.keys()).length === 0);
     assert.deepEqual(errors, []);
+    console.log(JSON.stringify({ mobile, blockedFallbackFonts }));
     return { viewport: mobile ? 'mobile' : 'desktop', warmMs, changedCanvasPixels: changed, warmMounts: 0, warmDeletes: 0, warmAssets: 0, retainedState: true, tenantReturnState: true, oldTicketRevoked: true, reloadModuleDownloads: 0, loginCacheIsolation: true, fullscreenReturn: true, versionInvalidation: true, lruEviction: true, permissionRemoval: true, contextInvalidation: true, consoleErrors: 0 };
   } catch (error) {
     await page.screenshot({ path: resolve(output, 'failure.png') });
@@ -252,7 +263,15 @@ async function run(browser, mobile) {
   } finally { await context.close(); }
 }
 
-(async () => {
+module.exports.startFixture = async () => {
+  reset();
+  fixture.catalog.page_versions['Compose 保活'] = JSON.stringify(['v1', 'v1', 'v1']);
+  await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
+  origin = `http://127.0.0.1:${server.address().port}`;
+  return { origin, counts, fixture, close: () => new Promise(resolve => server.close(resolve)) };
+};
+
+if (require.main === module) (async () => {
   await mkdir(output, { recursive: true });
   await new Promise(resolve => server.listen(Number(process.env.AIO_KEEPALIVE_PREVIEW_PORT || 0), '127.0.0.1', resolve));
   origin = `http://127.0.0.1:${server.address().port}`;

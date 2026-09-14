@@ -16,7 +16,6 @@ use axum::{
     response::{IntoResponse, Response},
 };
 use kuchikiki::traits::TendrilSink;
-use sha2::{Digest, Sha256};
 use std::collections::BTreeMap;
 use std::time::Instant;
 use uuid::Uuid;
@@ -70,14 +69,16 @@ pub(in crate::runtime::server) async fn mount(
     ensure!(bundle.digest() == revision, "插件安装版本发生变化");
     let entry = page.entry;
     let assets = bundle
-        .frontend_files()
-        .filter(|(path, _)| *path != entry)
-        .map(|(path, bytes)| (path.to_owned(), format!("{:x}", Sha256::digest(bytes))))
+        .frontend_assets()
+        .iter()
+        .filter(|(path, _)| **path != entry)
+        .map(|(path, asset)| (path.to_owned(), asset.digest.clone()))
         .collect::<BTreeMap<_, _>>();
     let asset_sizes = bundle
-        .frontend_files()
-        .filter(|(path, _)| *path != entry)
-        .map(|(path, bytes)| (path.to_owned(), bytes.len()))
+        .frontend_assets()
+        .iter()
+        .filter(|(path, _)| **path != entry)
+        .map(|(path, asset)| (path.to_owned(), asset.size))
         .collect();
     let token = state.frontend.issue(FrontendGrant {
         cookie: headers
@@ -262,6 +263,7 @@ fn render(bytes: &[u8], prefix: &str, entry: &str, token: &str) -> Result<Vec<u8
     let script = script.as_node().clone();
     script.detach();
     for source in [
+        az_plugin_runtime::FRONTEND_LIFECYCLE,
         az_plugin_runtime::FRONTEND_WASM,
         az_plugin_runtime::FRONTEND_GUEST,
         include_str!("frontend_assets.js"),
@@ -310,7 +312,8 @@ mod tests {
         assert_eq!(
             scripts[0].text_contents(),
             format!(
-                "{}{}{}",
+                "{}{}{}{}",
+                az_plugin_runtime::FRONTEND_LIFECYCLE,
                 az_plugin_runtime::FRONTEND_WASM,
                 az_plugin_runtime::FRONTEND_GUEST,
                 include_str!("frontend_assets.js")

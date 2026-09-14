@@ -51,6 +51,7 @@ cargo check --no-default-features --features web
 print "构建 glibc 2.17 服务端"
 cargo zigbuild --release --target "$target" --no-default-features --features server
 print "构建 Web 资产"
+cargo clean -p az-ui-components --profile wasm-release --target wasm32-unknown-unknown --config 'profile.wasm-release.inherits="release"'
 dx build --platform web --release --debug-symbols false
 npm ci --prefix deploy --ignore-scripts --no-audit --no-fund
 node deploy/prepare-web.cjs "$CARGO_TARGET_DIR/dx/aio-idea/release/web/public"
@@ -89,6 +90,7 @@ test -f \"\$incoming/web/index.html\"
 test -f \"\$incoming/systemd/aio-plugin-supervisor.service\"
 test -f \"\$incoming/systemd/aio-idea.service\"
 install -d -o aio-shell -g aio-shell -m 0750 \"\$deploy_root/file-storage\"
+install -d -o aio-shell -g aio-shell -m 0700 \"\$deploy_root/compiled\"
 chown -R root:aio-shell \"\$incoming\"
 chmod -R u=rwX,g=rX,o= \"\$incoming\"
 mv \"\$incoming\" \"\$remote_release\"

@@ -10,7 +10,9 @@ let disposed = false;
 let renewing = false;
 const pending = new Set();
 const assets = mountFrontendAssets(frame, config, active);
+const lifecycle = createFrontendLifecycle(frame, config);
 const disposeBridge = mountBridge(frame, async request => {
+  if (!lifecycle.active()) throw new Error('插件尚未激活');
   if (!active()) throw new Error('租户页面已暂停');
   const body = JSON.stringify({ ...request, body: Array.from(request.body ?? []) });
   if (!body || body.length > 32 * 1024 * 1024) throw new Error('请求超过大小限制');
@@ -33,6 +35,7 @@ const cleanup = () => {
   disposed = true;
   clearInterval(heartbeat);
   disposeBridge();
+  lifecycle.dispose();
   assets.dispose();
   observer.disconnect();
   window.removeEventListener('pagehide', leave);

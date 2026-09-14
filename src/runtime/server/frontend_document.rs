@@ -112,4 +112,10 @@ pub(super) fn public_origin(configured: &str) -> Result<String> {
     Ok(url.origin().ascii_serialization())
 }
 
-pub(super) const BRIDGE: &str = include_str!("frontend_guest.js");
+pub(super) static BRIDGE: std::sync::LazyLock<String> = std::sync::LazyLock::new(|| {
+    format!(
+        "{}\n{}",
+        az_plugin_runtime::FRONTEND_LIFECYCLE,
+        include_str!("frontend_guest.js")
+    )
+});

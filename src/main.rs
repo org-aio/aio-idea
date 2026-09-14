@@ -49,6 +49,7 @@ fn Workspace() -> dioxus::prelude::Element {
     use dioxus::prelude::*;
 
     let mut last_application = use_signal(|| None::<startup::LoadedApplication>);
+    let mut preparations = use_signal(|| (String::new(), Vec::<String>::new()));
     let mut application = use_resource(move || {
         let previous = last_application.peek().clone();
         async move { startup::load(previous).await }
@@ -121,6 +122,12 @@ fn Workspace() -> dioxus::prelude::Element {
                 && page.required_permission.as_deref().is_none_or(|permission| snapshot.permissions.iter().any(|item| item == permission))
         }).map(|page| serde_json::json!({ "id": page.id, "version": catalog.page_versions.get(&page.id) })).collect::<Vec<_>>()
     }).to_string();
+    let preparation_context = preload.clone();
+    let prepared_pages = if preparations.read().0 == preload {
+        preparations.read().1.clone()
+    } else {
+        Vec::new()
+    };
     let mut static_plugins = match plugins::client_catalog() {
         Ok(value) => value,
         Err(error) => {
@@ -183,7 +190,14 @@ fn Workspace() -> dioxus::prelude::Element {
         })
         .collect::<Vec<_>>();
     rsx! {
-        runtime::frontend_preload::FrontendPreload { key: "{preload}", config: preload.clone() }
+        runtime::frontend_preload::FrontendPreload {
+            key: "{preload}", config: preload.clone(),
+            on_prepare: move |id: String| {
+                let mut value = preparations.write();
+                if value.0 != preparation_context { *value = (preparation_context.clone(), Vec::new()); }
+                if !value.1.contains(&id) { value.1.push(id); }
+            },
+        }
         for context in [catalog.session_context] {
           PluginApplication {
             key: "{context}",
@@ -192,6 +206,7 @@ fn Workspace() -> dioxus::prelude::Element {
             account_items: account_items.clone(),
             runtime_pages: runtime_pages.clone(),
             runtime_page_versions: catalog.page_versions.clone(),
+            prepared_pages: prepared_pages.clone(),
             workspace_id: catalog.tenant.id.clone(),
             workspace_context: catalog.context.clone(),
             render_runtime_page: runtime::client::render_page,

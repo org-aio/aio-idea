@@ -67,3 +67,27 @@ test('legacy catalog versions and shared resources use the same bounded pipeline
   assert.deepEqual(f.loaded.map(item => item.path), ['app.mjs', 'app.wasm']);
   assert.equal(f.calls.filter(call => call.request.method === 'DELETE').length, 2);
 });
+
+test('only completely warmed releases can create a background instance', async () => {
+  const f = fixture();
+  const prepared = [];
+  await f.warm(f.config, new AbortController().signal, async id => prepared.push(id));
+  assert.deepEqual(prepared, ['one']);
+  const large = fixture();
+  large.mount.asset_sizes['app.wasm'] = 81 * 1024 * 1024;
+  await large.warm(large.config, new AbortController().signal, async () => assert.fail('Budget bypassed by instance preparation'));
+});
+
+test('a stalled preparation stops further instance creation but still warms resources', async () => {
+  const f = fixture();
+  f.config.pages = ['one', 'two', 'three'].map(id => ({ id, version: `${id}:g` }));
+  f.env.fetch = async (url, request) => {
+    f.calls.push({ url, request });
+    const id = request.body ? JSON.parse(request.body).page_id : '';
+    return { ok: true, status: 200, json: async () => ({ data: { ...f.mount, revision: id, token: id } }) };
+  };
+  const prepared = [];
+  await f.warm(f.config, new AbortController().signal, async id => { prepared.push(id); return false; });
+  assert.deepEqual(prepared, ['one']);
+  assert.equal(f.calls.filter(call => call.request.method === 'DELETE').length, 3);
+});

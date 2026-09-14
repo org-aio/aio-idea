@@ -51,7 +51,9 @@ impl Components {
             .await?;
         let provisioner = DatabaseProvisioner::connect(database).await?;
         let keyring = Arc::new(load_keyring(key_path)?);
-        let engine = ComponentEngine::new()?;
+        let engine = ComponentEngine::with_cache(
+            &key_path.parent().unwrap_or(Path::new(".")).join("compiled"),
+        )?;
         let root = std::env::var_os("AIO_PROCESS_ROOT")
             .map(PathBuf::from)
             .unwrap_or_else(|| {

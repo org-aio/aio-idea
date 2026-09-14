@@ -13,6 +13,7 @@ let ticket = config.token;
 let epoch = 0;
 let restoring = null;
 const page = frame.closest("[data-aio-page-active]");
+const lifecycle = createFrontendLifecycle(frame, config);
 const workspaceActive = () => !page || page.dataset.aioWorkspaceActive !== 'false';
 const visible = () => !document.hidden && (!page || page.dataset.aioPageActive === "true");
 const routeKey = `aio-plugin-route:${config.session_context}:${config.context}:${config.page_id}`;
@@ -35,6 +36,7 @@ const receive = async (event) => {
   let body;
   try {
     if (typeof message.asset !== 'string') {
+      if (!lifecycle.active()) throw new Error('插件尚未激活');
       body = JSON.stringify(message.request);
       if (!body || body.length > 1048576) throw new Error("插件请求体过大");
     }
@@ -122,6 +124,7 @@ const cleanup = () => {
   disposed = true;
   clearInterval(heartbeat);
   observer.disconnect();
+  lifecycle.dispose();
   document.removeEventListener("visibilitychange", activity);
   window.removeEventListener("pagehide", leave);
   window.removeEventListener("pageshow", activity);

@@ -64,6 +64,11 @@ impl WasmManager {
             .wasm_gc(true)
             .collector(Collector::DeferredReferenceCounting)
             .consume_fuel(true);
+        if let Some(directory) = std::env::var_os("AIO_WASM_CACHE") {
+            config.cache(Some(az_plugin_runtime::compilation_cache(Path::new(
+                &directory,
+            ))?));
+        }
         let engine = Engine::new(&config)
             .map_err(|error| anyhow!("创建 Wasm Component 引擎失败: {error:#}"))?;
         Ok(Self {

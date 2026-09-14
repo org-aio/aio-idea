@@ -1,7 +1,7 @@
 use dioxus::prelude::*;
 
 #[component]
-pub(crate) fn FrontendPreload(config: String) -> Element {
+pub(crate) fn FrontendPreload(config: String, on_prepare: Callback<String>) -> Element {
     let mut bridge = use_signal(|| None::<document::Eval>);
     use_future(move || {
         let config = config.clone();
@@ -13,7 +13,17 @@ pub(crate) fn FrontendPreload(config: String) -> Element {
                  const controller = new AbortController();
                  const leave = () => controller.abort();
                  window.addEventListener('pagehide', leave);
-                 const timer = setTimeout(() => { void warmFrontendAssets(config, controller.signal).catch(() => {}); }, 500);
+                 const prepare = async id => {
+                   dioxus.send(id);
+                   const deadline = Date.now() + 30000;
+                   while (!controller.signal.aborted && Date.now() < deadline) {
+                     const page = [...document.querySelectorAll('[data-aio-page]')].find(node => node.dataset.aioPage === id && node.dataset.aioWorkspaceContext === config.context);
+                     if (page?.querySelector('iframe[data-aio-prepared=true]')) return true;
+                     await new Promise(resolve => setTimeout(resolve, 250));
+                   }
+                   return false;
+                 };
+                 const timer = setTimeout(() => { void warmFrontendAssets(config, controller.signal, prepare).catch(() => {}); }, 1500);
                  try { await dioxus.recv(); } finally {
                    clearTimeout(timer); controller.abort();
                    window.removeEventListener('pagehide', leave);
@@ -21,7 +31,9 @@ pub(crate) fn FrontendPreload(config: String) -> Element {
             ));
             if evaluator.send(config).is_ok() {
                 bridge.set(Some(evaluator));
-                let _ = evaluator.recv::<serde_json::Value>().await;
+                while let Ok(id) = evaluator.recv::<String>().await {
+                    on_prepare.call(id);
+                }
             }
         }
     });
