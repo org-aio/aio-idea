@@ -87,8 +87,7 @@ fn MountedFrontend(
         iframe {
             id: frame_id,
             title: label,
-            class: "w-full border-0",
-            height: "640",
+            class: "application-frontend",
             "sandbox": "allow-scripts allow-forms",
             allow: "fullscreen; clipboard-write",
             referrerpolicy: "no-referrer",
