@@ -5,7 +5,7 @@ use axum::{
     extract::{DefaultBodyLimit, State},
     http::{HeaderMap, StatusCode},
     response::{IntoResponse, Response},
-    routing::post,
+    routing::{get, post},
 };
 use az_plugin_contract::process::ServiceRequest;
 use futures_util::StreamExt;
@@ -20,6 +20,7 @@ pub(super) fn router(gateway: Arc<Gateway>) -> Router {
     Router::new()
         .route("/invoke", post(invoke))
         .route("/egress", post(egress))
+        .route("/egress/models", get(models))
         .layer(DefaultBodyLimit::max(2 * 1024 * 1024))
         .with_state(gateway)
 }
@@ -139,13 +140,24 @@ async fn invoke_inner(
 }
 
 async fn egress(State(gateway): State<Arc<Gateway>>, headers: HeaderMap, body: Bytes) -> Response {
-    match egress_inner(gateway, headers, body).await {
+    match egress_inner(gateway, headers, Some(body)).await {
         Ok(response) => response,
         Err(_) => (StatusCode::BAD_GATEWAY, "模型出站不可用或未授权").into_response(),
     }
 }
 
-async fn egress_inner(gateway: Arc<Gateway>, headers: HeaderMap, body: Bytes) -> Result<Response> {
+async fn models(State(gateway): State<Arc<Gateway>>, headers: HeaderMap) -> Response {
+    match egress_inner(gateway, headers, None).await {
+        Ok(response) => response,
+        Err(_) => (StatusCode::BAD_GATEWAY, "模型列表不可用或未授权").into_response(),
+    }
+}
+
+async fn egress_inner(
+    gateway: Arc<Gateway>,
+    headers: HeaderMap,
+    body: Option<Bytes>,
+) -> Result<Response> {
     let permit = gateway.quota.clone().try_acquire_owned()?;
     active(&gateway, &headers).await?;
     let endpoint = headers
@@ -156,19 +168,28 @@ async fn egress_inner(gateway: Arc<Gateway>, headers: HeaderMap, body: Bytes) ->
         gateway.endpoints.iter().any(|allowed| endpoint == allowed),
         "模型地址未授权"
     );
-    let payload: serde_json::Value = serde_json::from_slice(&body)?;
-    ensure!(
-        payload["stream"] == true
-            && payload["model"]
-                .as_str()
-                .is_some_and(|s| !s.is_empty() && s.len() <= 256),
-        "模型请求无效"
-    );
-    let mut request = gateway
-        .client
-        .post(format!("{endpoint}/chat/completions"))
-        .header("content-type", "application/json")
-        .body(body);
+    let content_type = if body.is_some() {
+        "text/event-stream"
+    } else {
+        "application/json"
+    };
+    let mut request = if let Some(body) = body {
+        let payload: serde_json::Value = serde_json::from_slice(&body)?;
+        ensure!(
+            payload["stream"] == true
+                && payload["model"]
+                    .as_str()
+                    .is_some_and(|s| !s.is_empty() && s.len() <= 256),
+            "模型请求无效"
+        );
+        gateway
+            .client
+            .post(format!("{endpoint}/chat/completions"))
+            .header("content-type", "application/json")
+            .body(body)
+    } else {
+        gateway.client.get(format!("{endpoint}/models"))
+    };
     if let Some(authorization) = headers.get("authorization") {
         request = request.header("authorization", authorization);
     }
@@ -182,8 +203,8 @@ async fn egress_inner(gateway: Arc<Gateway>, headers: HeaderMap, body: Bytes) ->
             .headers()
             .get("content-type")
             .and_then(|v| v.to_str().ok())
-            .is_some_and(|v| v.starts_with("text/event-stream")),
-        "模型未返回 SSE"
+            .is_some_and(|v| v.starts_with(content_type)),
+        "模型响应类型无效"
     );
     let stream = response
         .bytes_stream()
@@ -200,6 +221,6 @@ async fn egress_inner(gateway: Arc<Gateway>, headers: HeaderMap, body: Bytes) ->
         });
     Ok(Response::builder()
         .status(status)
-        .header("content-type", "text/event-stream")
+        .header("content-type", content_type)
         .body(Body::from_stream(stream))?)
 }
