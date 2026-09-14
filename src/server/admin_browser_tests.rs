@@ -34,8 +34,8 @@ async fn system_management_browser_workflows() -> Result<()> {
     let listener = tokio::net::TcpListener::bind(format!("127.0.0.1:{port}")).await?;
     let base = format!("http://{}", listener.local_addr()?);
     let temporary = tempfile::tempdir()?;
-    let runtime = crate::runtime::server::RuntimeState::isolated_admin_test(
-        identity,
+    let runtime = az_plugin_host::runtime::server::RuntimeState::isolated_admin_test(
+        std::sync::Arc::new(crate::host::ProductIdentity::new(identity, &database).await?),
         &database,
         &base,
         temporary.path(),
@@ -43,7 +43,7 @@ async fn system_management_browser_workflows() -> Result<()> {
     .await?;
     let router = Router::new()
         .merge(crate::plugins::server_router(&catalog)?)
-        .merge(crate::runtime::server::router(runtime))
+        .merge(az_plugin_host::runtime::server::router(runtime))
         .fallback_service(ServeDir::new(dist).fallback(ServeFile::new(dist.join("index.html"))));
     println!("Isolated admin preview: {base}");
     let server = tokio::spawn(async move { axum::serve(listener, router).await });

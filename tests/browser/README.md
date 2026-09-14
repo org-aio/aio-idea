@@ -1,12 +1,14 @@
 # 导航浏览器验收
 
-`frontend-layout.cjs` 使用真实 Compose 和 v2 协议夹具，验证 1920×1200、1440×1000、390×844、844×390 下 iframe 与画布填满内容区、底部无多余留白、调整尺寸和侧栏不重新挂载，以及原生长页面滚动与账户全屏页。截图和尺寸报告保存在 `target/frontend-layout`。
+`workbench.cjs` 使用真实构建产物和隔离 API 夹具，验证 390/768/1440px 导航、设置、用户偏好隔离、系统主题、市场筛选、发布详情及后台刷新滚动位置，并检查登录/加载/空状态/失败/无权限。运行 `node tests/browser/workbench.cjs`，截图和报告在 `target/workbench-test`；需要 Node 可解析 Playwright。夹具不代表正式服务验收。
+
+平台仓库 `tests/browser/frontend-layout.cjs` 使用真实 Compose 和 v2 协议夹具，验证 1920×1200、1440×1000、390×844、844×390 下 iframe 与画布填满内容区、底部无多余留白、调整尺寸和侧栏不重新挂载，以及原生长页面滚动与账户全屏页。截图和尺寸报告保存在 `target/frontend-layout`。
 
 `memory-workbench.cjs` 在正式宿主的隔离验收租户中只读加载真实记忆图谱，验证相同四种尺寸、画布缩放及实例保留；打开一次新建弹窗后检查各尺寸的操作按钮、横屏正文滚动，最后取消，不保存业务数据。截图和报告位于 `target/component-delivery/memory-workbench`。已知 Compose 外部回退字体的 CSP 拦截单独计数，其他浏览器错误仍使验收失败。
 
-`preparation.cjs` 使用真实 Compose 和隔离协议夹具，检查桌面/手机在隐藏 37 秒后仍未执行业务请求、首次点击复用实例、画布计数及刷新后的准备；`--component` 覆盖 v2 宿主与二进制通信桥。`preparation-live.cjs` 使用正式 Cookie 和只读 Ktor 调用，对比 `baseline`（仅字节预热）与默认模式（实例预备）的耗时；检查原实例、零重复 Wasm 下载、切换状态及桌面/手机截图。`rolling` 模式在部署前保留旧壳，检测新发布物后验证无需刷新仍能挂载并调用新宿主。输出保存在 `target/preparation-test`，测试只修改浏览器内计数。
+平台仓库 `tests/browser/preparation.cjs` 使用真实 Compose 和隔离协议夹具，检查桌面/手机在隐藏 37 秒后仍未执行业务请求、首次点击复用实例、画布计数及刷新后的准备；`--component` 覆盖 v2 宿主与二进制通信桥。`preparation-live.cjs` 使用正式 Cookie 和只读 Ktor 调用，对比 `baseline`（仅字节预热）与默认模式（实例预备）的耗时；检查原实例、零重复 Wasm 下载、切换状态及桌面/手机截图。`rolling` 模式在部署前保留旧壳，检测新发布物后验证无需刷新仍能挂载并调用新宿主。输出保存在 `target/preparation-test`，测试只修改浏览器内计数。
 
-`node --test tests/browser/asset_cache.cjs tests/browser/asset_preload.cjs tests/browser/asset_bridge.cjs tests/browser/guest-bridge.cjs` 覆盖静态资源摘要、下载接管、后台配额、会话版本校验、临时票据回收及隔离消息来源。`asset-preload-live.cjs` 使用正式 Cookie，只读验证登录后预热不触发业务调用、Memory 首次打开及刷新零 Wasm 重复下载，并记录桌面/手机真实画面和耗时；`baseline` 参数测量未预热版本。输出保存在 `target/component-delivery/asset-preload`。
+平台仓库 `tests/browser/` 下的资源与桥接测试覆盖静态资源摘要、下载接管、后台配额、会话版本校验、临时票据回收及隔离消息来源。`asset-preload-live.cjs` 使用正式 Cookie，只读验证登录后预热不触发业务调用、Memory 首次打开及刷新零 Wasm 重复下载，并记录桌面/手机真实画面和耗时；`baseline` 参数测量未预热版本。输出保存在 `target/component-delivery/asset-preload`。
 
 `agent-process.cjs` 使用正式宿主的 v2 发布、安装、页面挂载与 RPC。`publish` 安装智能体及智能体记忆；默认命令验证加密收件、幂等、本地零 Token 检索、图谱激活和 Compose 桌面/移动页面；宿主重启后以 `resume` 检查同一批加密资料仍能受控展示。仅使用随机测试秘密，私有夹具和报告位于 `target/component-delivery/agent-rehearsal` 或 `agent-public`。`AIO_AGENT_TEST_CLEANUP=1` 清理本次来源和会话，保留正式插件安装。
 
@@ -48,11 +50,12 @@ Cookie 文件采用 curl 的 Netscape 格式，仅保存在本机。也可通过
 
 `admin-files.cjs`、`admin-dictionaries.cjs`、`admin-rbac.cjs`、`admin-account.cjs` 通过 `system_management_browser_workflows` 测试启动真实系统插件接口，验证列表、搜索、排序、分页、表单、删除、权限撤销、密码及租户切换。仅允许本机 `aio_keepalive_test` 数据库，测试创建的临时租户由宿主清理；不要对生产环境运行这些写入用例。截图及报告位于 `target/admin-ui-test`。设置 `AIO_ADMIN_PREVIEW_PORT` 可启动隔离开发预览。
 
-`keepalive.cjs` 使用构建后的真实壳与 Compose 前端，在隔离 HTTP 协议夹具中验证桌面/移动端 canvas 绘制、计数状态、A→B→A 的 iframe/JS 实例不变、零重复挂载/释放/资产下载、账户全屏返回、版本替换、LRU 淘汰、页面撤销与会话上下文隔离。夹具不调用生产服务，不替代后端持久化测试。需要 Node 可解析 `playwright`、`pngjs`、`parse5`，以及本机 Chrome：
+平台仓库 `tests/browser/keepalive.cjs` 使用构建后的真实壳与 Compose 前端，在隔离 HTTP 协议夹具中验证桌面/移动端 canvas 绘制、计数状态、A→B→A 的 iframe/JS 实例不变、零重复挂载/释放/资产下载、账户全屏返回、版本替换、LRU 淘汰、页面撤销与会话上下文隔离。夹具不调用生产服务，不替代后端持久化测试。需要 Node 可解析 `playwright`、`pngjs`、`parse5`，以及本机 Chrome：
 
 ```bash
 dx build --platform web --release --debug-symbols false
-AIO_TEST_KMP_FRONTEND=../aio-plugin-kmp-example/dist/frontend node tests/browser/keepalive.cjs
+cd /path/to/aio-platform
+AIO_TEST_SHELL=/path/to/aio-idea/target/dx/aio-idea/release/web/public AIO_TEST_KMP_FRONTEND=/path/to/compose/frontend node tests/browser/keepalive.cjs
 ```
 
 截图和测量写到 `target/keepalive-test`。真实 PostgreSQL HTTP 测试还覆盖票据续期、元数据复用，以及权限撤销后带 ETag 的请求仍被拒绝。

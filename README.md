@@ -4,7 +4,9 @@
 
 这是基于 [aio-platform](https://github.com/zjarlin/aio-platform) 组装的应用产品和官方插件中心。系统引导能力来自 Cargo 中锁定完整提交 SHA 的独立插件仓库；`aio.toml` 定义默认租户首次启动时安装的运行时 Git 组合。活动版本、租户绑定、市场元数据和完整 `.aio-plugin` 二进制包保存在 PostgreSQL，本地版本目录只是可恢复的运行缓存。
 
-开发者在本地完成构建与 `aio plugin package` 后，使用来源绑定凭证执行 `aio plugin publish` 直接上传二进制包。发布不依赖 GitHub Actions，不要求提交编译产物；验证与健康检查成功后在线激活，失败保留旧版本。成功发布的二进制包可以下载、在其他租户安装和回滚，无需回连 Git。当前动态目标为 PageDefinition、Wasm Component 和隔离 process；Dioxus 原生源码插件仍通过整体构建装配。
+插件本地开发使用 `aio plugin dev .`，由平台提供的独立宿主加载未提交代码及必需依赖；无需克隆或编译本产品，也不需要 push。完整步骤见 [平台开发沙箱](https://github.com/zjarlin/aio-platform/blob/main/docs/development/README.md)。
+
+生产发布由 `aio-platform/delivery` 的独立构建服务发现带发布标记的公开仓库，跟踪默认分支并完成构建、验证和租户升级，不依赖 GitHub Actions。手工二进制发布继续用于受控发布场景。安装、实例监督、资源服务、通信桥和通用浏览器壳均归 `az-plugin-host`；本产品只装配身份、品牌、系统页面、默认组合及生产部署配置。
 
 当前包协议为格式 2，CLI 与宿主使用同一固定提交的共享验证库。一个包可以同时包含 `plugin.frontend` 静态资源与 Wasm Component 或 process 后端。页面用 `PageDefinition.body.kind = frontend` 声明入口；宿主为当前用户、租户、页面和活动版本签发短期挂载票据，并在不含 `allow-same-origin` 的沙箱 iframe 中加载。浏览器请求只能经受控桥调用清单声明的后端路由，停用、卸载、回滚、切换租户或会话失效都会撤销旧票据。[Dioxus 全栈示例](https://github.com/zjarlin/aio-plugin-dioxus-fullstack) 已覆盖同仓前端、后端和共享模型。
 

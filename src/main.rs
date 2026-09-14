@@ -1,10 +1,12 @@
 #![forbid(unsafe_code)]
 
+#[cfg(any(feature = "web", feature = "desktop"))]
+mod account;
+#[cfg(feature = "server")]
+mod host;
 mod plugins;
-mod runtime;
 #[cfg(feature = "server")]
 mod server;
-mod startup;
 
 #[cfg(all(feature = "server", any(feature = "web", feature = "desktop")))]
 compile_error!("server 不能和 web 或 desktop 同时启用");
@@ -18,7 +20,7 @@ fn main() {
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     if std::env::args().nth(1).as_deref() == Some("supervisor") {
-        return runtime::server::run_supervisor().await;
+        return az_plugin_host::runtime::server::run_supervisor().await;
     }
     server::run().await
 }
@@ -35,188 +37,27 @@ fn App() -> dioxus::prelude::Element {
 
     rsx! {
         az_ui_components::UiStylesheets {}
-        Workspace {}
+        ProductWorkspace {}
     }
 }
 
 #[cfg(any(feature = "web", feature = "desktop"))]
 #[dioxus::prelude::component]
-fn Workspace() -> dioxus::prelude::Element {
-    use az_dioxus_admin_shell::{
-        ApplicationAccountItem, ApplicationMenuGroup, ApplicationRuntimePage, ApplicationUser,
-        PluginApplication,
-    };
+fn ProductWorkspace() -> dioxus::prelude::Element {
     use dioxus::prelude::*;
-
-    let mut last_application = use_signal(|| None::<startup::LoadedApplication>);
-    let mut preparations = use_signal(|| (String::new(), Vec::<String>::new()));
-    let mut application = use_resource(move || {
-        let previous = last_application.peek().clone();
-        async move { startup::load(previous).await }
-    });
-    use_effect(move || {
-        if let Some(Ok(value)) = application.read().as_ref() {
-            last_application.set(Some(value.clone()));
-        }
-    });
-    use_effect(move || {
-        if application
-            .read()
-            .as_ref()
-            .is_some_and(|result| result.as_ref().is_ok_and(|value| value.snapshot.is_none()))
-        {
-            spawn(async {
-                let _ = document::eval("if (typeof caches !== 'undefined') { await Promise.all((await caches.keys()).filter(name => name.startsWith('aio-plugin-assets-v1-')).map(name => caches.delete(name))); } return true;").await;
-            });
-        }
-    });
-    use_future(move || async move {
-        loop {
-            let Ok(reason) = document::eval(include_str!("runtime/catalog_watch.js")).await else {
-                break;
-            };
-            if application.finished() || reason.as_str() == Some("invalidated") {
-                application.restart();
-            }
-        }
-    });
-    let result = application.read().as_ref().cloned();
-    let result = match result {
-        Some(Err(error)) => Some(
-            last_application
-                .read()
-                .clone()
-                .map(Ok)
-                .unwrap_or(Err(error)),
-        ),
-        None => last_application.read().clone().map(Ok),
-        result => result,
+    let catalog = match plugins::client_catalog() {
+        Ok(catalog) => catalog,
+        Err(error) => return rsx! { p { role: "alert", "加载产品插件失败: {error}" } },
     };
-    let Some(application_result) = result else {
-        return rsx! { p { role: "status", aria_busy: "true", "正在加载工作区" } };
-    };
-    let snapshot = match application_result {
-        Ok(startup::LoadedApplication {
-            snapshot: Some(snapshot),
-            ..
-        }) => snapshot,
-        Ok(startup::LoadedApplication { snapshot: None, .. }) => {
-            return rsx! { aio_plugin_identity_client::LoginPage {} };
-        }
-        Err(error) => {
-            return rsx! {
-                p { role: "alert", "{error}" }
-                az_ui_components::button::Button {
-                    onclick: move |_| application.restart(),
-                    "重试"
-                }
-            };
-        }
-    };
-    let catalog = snapshot.catalog;
-    let preload = serde_json::json!({
-        "session_context": catalog.session_context,
-        "context": catalog.context,
-        "pages": catalog.pages.iter().filter(|page| {
-            matches!(page.body, runtime::PageBody::Frontend { .. })
-                && page.required_permission.as_deref().is_none_or(|permission| snapshot.permissions.iter().any(|item| item == permission))
-        }).map(|page| serde_json::json!({ "id": page.id, "version": catalog.page_versions.get(&page.id) })).collect::<Vec<_>>()
-    }).to_string();
-    let preparation_context = preload.clone();
-    let prepared_pages = if preparations.read().0 == preload {
-        preparations.read().1.clone()
-    } else {
-        Vec::new()
-    };
-    let mut static_plugins = match plugins::client_catalog() {
-        Ok(value) => value,
-        Err(error) => {
-            return rsx! { p { role: "alert", "加载应用页面失败: {error}" } };
-        }
-    };
-    static_plugins.pages.retain(|page| {
-        page.required_permission
-            .is_none_or(|permission| snapshot.permissions.iter().any(|item| item == permission))
-    });
-    static_plugins.account_items.retain(|item| {
-        item.required_permission
-            .as_deref()
-            .is_none_or(|permission| snapshot.permissions.iter().any(|value| value == permission))
-    });
-    let mut account_items = static_plugins.account_items;
-    account_items.extend(
-        catalog
-            .account_items
-            .into_iter()
-            .filter(|item| {
-                item.required_permission
-                    .as_deref()
-                    .is_none_or(|permission| {
-                        snapshot
-                            .permissions
-                            .iter()
-                            .any(|candidate| candidate == permission)
-                    })
-            })
-            .map(|item| ApplicationAccountItem {
-                id: item.id,
-                label: item.label,
-                icon: item.icon,
-                page_id: Some(item.page_id),
-                required_permission: item.required_permission,
-                destructive: false,
-            }),
-    );
-    let runtime_pages = catalog
-        .pages
-        .into_iter()
-        .map(|page| ApplicationRuntimePage {
-            id: page.id,
-            label: page.label,
-            icon: page.icon,
-            scene_id: page.scene.id,
-            scene_label: page.scene.label,
-            menu_path: page
-                .menu_path
-                .into_iter()
-                .map(|group| ApplicationMenuGroup {
-                    id: group.id,
-                    label: group.label,
-                    icon: group.icon,
-                })
-                .collect(),
-            required_permission: page.required_permission,
-            definition: serde_json::to_string(&page.body).unwrap_or_default(),
-        })
-        .collect::<Vec<_>>();
     rsx! {
-        runtime::frontend_preload::FrontendPreload {
-            key: "{preload}", config: preload.clone(),
-            on_prepare: move |id: String| {
-                let mut value = preparations.write();
-                if value.0 != preparation_context { *value = (preparation_context.clone(), Vec::new()); }
-                if !value.1.contains(&id) { value.1.push(id); }
-            },
-        }
-        for context in [catalog.session_context] {
-          PluginApplication {
-            key: "{context}",
-            application_label: "AIO IDEA",
-            pages: static_plugins.pages.clone(),
-            account_items: account_items.clone(),
-            runtime_pages: runtime_pages.clone(),
-            runtime_page_versions: catalog.page_versions.clone(),
-            prepared_pages: prepared_pages.clone(),
-            workspace_id: catalog.tenant.id.clone(),
-            workspace_context: catalog.context.clone(),
-            render_runtime_page: runtime::client::render_page,
-            on_account_action: runtime::client::account_action,
-            user: ApplicationUser {
-                label: catalog.user.label.clone(),
-                handle: catalog.user.handle.clone(),
-                initials: catalog.user.initials.clone(),
-            },
-          }
+        az_plugin_host::Workspace {
+            config: az_plugin_host::composition::BrowserComposition {
+                label: "AIO IDEA".into(),
+                pages: catalog.pages,
+                account_items: catalog.account_items,
+                login: aio_plugin_identity_client::LoginPage,
+                account_action: account::account_action,
+            }
         }
     }
 }

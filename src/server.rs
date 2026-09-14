@@ -10,12 +10,14 @@ use axum::{
     http::{HeaderValue, StatusCode, header},
     routing::{any, get},
 };
-mod static_files;
 
-use crate::{plugins, runtime};
+use crate::plugins;
+use az_plugin_host::runtime;
 
 #[cfg(test)]
 mod admin_browser_tests;
+#[cfg(test)]
+mod runtime_tests;
 
 pub async fn run() -> Result<()> {
     let port = env::var("AIO_WEB_PORT")
@@ -41,8 +43,12 @@ pub async fn run() -> Result<()> {
     aio_plugin_rbac_server::service(&plugin_catalog)?
         .initialize()
         .await?;
-    let runtime = runtime::server::RuntimeState::initialize(identity).await?;
-    let application = static_files::application(web_dist).layer(
+    let config = crate::host::configuration()?;
+    let identity = std::sync::Arc::new(
+        crate::host::ProductIdentity::new(identity, &config.database_url).await?,
+    );
+    let runtime = runtime::server::RuntimeState::initialize(config, identity).await?;
+    let application = az_plugin_host::static_files::application(web_dist).layer(
         axum::middleware::from_fn_with_state(runtime.clone(), runtime::server::bootstrap_document),
     );
     let router = Router::new()
