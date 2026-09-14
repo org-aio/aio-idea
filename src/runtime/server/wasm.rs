@@ -211,7 +211,7 @@ fn call_definition(instance: &Arc<Mutex<TenantInstance>>) -> Result<Vec<PageDefi
     let (json,) = handle
         .call(&mut instance.store, ())
         .map_err(|error| anyhow!("调用 Wasm Component definition 失败: {error:#}"))?;
-    serde_json::from_str(&json)
+    az_plugin_manifest::parse_page_definitions(json.as_bytes())
         .map_err(|error| anyhow!("解析 Wasm Component PageDefinition 失败: {error}"))
 }
 

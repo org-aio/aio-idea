@@ -30,6 +30,8 @@
 
 ## 集成测试
 
+静态产物、离线包、Wasm `definition` 和 process `/aio/definition` 统一调用 `az-plugin-manifest::parse_page_definitions`，接收场景 `children` 树并展开为页面列表后提交。数据库、页面权限和跨插件菜单合并继续使用 `PageDefinition`；目录不承载权限，权限必须写在叶子上。`loads_tree_definition_over_http_and_preserves_leaf_permission` 使用本地 HTTP 代理验证真实入站响应解析，不连接真实容器。
+
 常规运行 `cargo test --no-default-features --features server`。包存储测试显式要求 `AIO_TEST_DATABASE_URL` 指向测试 PostgreSQL，运行 `stores_immutable_binary_packages_and_restores_deleted_cache -- --ignored`；它在临时 schema 中验证版本不可变、二进制持久化和缓存恢复。
 
 HTTP 联调运行 `binary_cli_publishes_downloads_recovers_and_rolls_back_over_http -- --ignored`，需要同值的 `AIO_TEST_DATABASE_URL` 与 `AIO_DATABASE_URL`、`AIO_TEST_CLI` 指向已构建的 CLI，以及测试用 `AIO_BOOTSTRAP_ACCOUNT`、`AIO_BOOTSTRAP_PASSWORD`、`AIO_PLUGIN_PUBLISH_ACCOUNTS`。只使用独立可丢弃的测试数据库。该测试通过真实 CLI 和 HTTP 验证无 Git 目录打包、上传、来源权限、版本冲突、下载、卸载重装、回滚、无效包保留活动版本以及租户切换；不依赖 Docker，也不作为 process 隔离验证的替代。

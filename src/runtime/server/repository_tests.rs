@@ -303,8 +303,8 @@ async fn rejects_a_hexadecimal_ref_that_points_to_another_commit() -> Result<()>
 }
 
 #[tokio::test]
-async fn publishes_validated_page_definition_artifact() -> Result<()> {
-    let artifact = br#"[{"id":"published-page","label":"Published","icon":"box","scene":{"id":"community","label":"Community"},"required_permission":null,"body":{"kind":"text","title":"Published","content":"from CI"}}]"#;
+async fn publishes_validated_navigation_tree_artifact() -> Result<()> {
+    let artifact = br#"{"id":"community","label":"Community","children":[{"id":"reports","label":"Reports","children":[{"id":"published-page","label":"Published","icon":"box","required_permission":"reports.read","body":{"kind":"text","title":"Published","content":"from CI"}}]}]}"#;
     let request = PluginPackage::new(
         "https://github.com/example/aio-plugin-published.git".to_owned(),
         "1.0.0".to_owned(),
@@ -340,6 +340,19 @@ pages = ["published-page"]
 
     assert_eq!(published.runtime, PluginRuntime::PageDefinition);
     assert_eq!(published.pages.len(), 1);
+    assert_eq!(published.pages[0].menu_path[0].id, "reports");
+    assert_eq!(
+        published.pages[0].required_permission.as_deref(),
+        Some("reports.read")
+    );
+    assert_eq!(
+        std::fs::read(installer.artifact(&request.rev, "dist/pages.json")?)?,
+        artifact
+    );
+    let restored = installer
+        .validate_published(&request.git, &request.rev)
+        .await?;
+    assert_eq!(restored.pages, published.pages);
     assert!(
         installer
             .artifact(&request.rev, "dist/pages.json")?

@@ -63,7 +63,7 @@ dependencies = [
 
 [[package]]
 name = "aio-idea"
-version = "2026.9.11"
+version = "2026.9.14"
 dependencies = [
  "aio-plugin-account",
  "aio-plugin-dictionary-client",
@@ -721,7 +721,7 @@ dependencies = [
 [[package]]
 name = "az-plugin-delivery"
 version = "2026.5.10"
-source = "git+https://github.com/zjarlin/aio-platform.git?rev=2e03cb9c34bbe357d3a1e9e3cb5789beef310748#2e03cb9c34bbe357d3a1e9e3cb5789beef310748"
+source = "git+https://github.com/zjarlin/aio-platform.git?rev=5f87419434b5bc6c2c44b2f6e29ef22c0f2f3799#5f87419434b5bc6c2c44b2f6e29ef22c0f2f3799"
 dependencies = [
  "anyhow",
  "serde",
@@ -731,7 +731,7 @@ dependencies = [
 [[package]]
 name = "az-plugin-manifest"
 version = "2026.5.10"
-source = "git+https://github.com/zjarlin/aio-platform.git?rev=2e03cb9c34bbe357d3a1e9e3cb5789beef310748#2e03cb9c34bbe357d3a1e9e3cb5789beef310748"
+source = "git+https://github.com/zjarlin/aio-platform.git?rev=5f87419434b5bc6c2c44b2f6e29ef22c0f2f3799#5f87419434b5bc6c2c44b2f6e29ef22c0f2f3799"
 dependencies = [
  "anyhow",
  "semver",
@@ -746,7 +746,7 @@ dependencies = [
 [[package]]
 name = "az-plugin-package"
 version = "2026.5.10"
-source = "git+https://github.com/zjarlin/aio-platform.git?rev=2e03cb9c34bbe357d3a1e9e3cb5789beef310748#2e03cb9c34bbe357d3a1e9e3cb5789beef310748"
+source = "git+https://github.com/zjarlin/aio-platform.git?rev=5f87419434b5bc6c2c44b2f6e29ef22c0f2f3799#5f87419434b5bc6c2c44b2f6e29ef22c0f2f3799"
 dependencies = [
  "anyhow",
  "az-plugin-manifest",

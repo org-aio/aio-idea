@@ -99,7 +99,7 @@ impl RepositoryInstaller {
             }
             let artifact = report.artifact.context("运行时插件缺少 artifact")?;
             let pages = match runtime_kind {
-                PluginRuntime::PageDefinition => serde_json::from_slice::<Vec<PageDefinition>>(
+                PluginRuntime::PageDefinition => az_plugin_manifest::parse_page_definitions(
                     &tokio::fs::read(&artifact).await.with_context(|| {
                         format!("读取 PageDefinition 失败: {}", artifact.display())
                     })?,
@@ -159,7 +159,7 @@ impl RepositoryInstaller {
             .await
             .context("等待发布 artifact 校验失败")??;
         let pages = if runtime.kind == PluginRuntime::PageDefinition {
-            serde_json::from_slice::<Vec<PageDefinition>>(
+            az_plugin_manifest::parse_page_definitions(
                 &tokio::fs::read(artifact_path(&root, &runtime.artifact)?).await?,
             )
             .context("解析已发布 PageDefinition 失败")?

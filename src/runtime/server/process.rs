@@ -1,7 +1,7 @@
 use std::{env, net::IpAddr, path::PathBuf, time::Duration};
 
 use anyhow::{Context as _, Result, bail, ensure};
-use az_plugin_manifest::{PageDefinition, validate_page_definitions};
+use az_plugin_manifest::PageDefinition;
 use reqwest::{Method, StatusCode, Url, header};
 
 use super::supervisor::{
@@ -120,11 +120,11 @@ impl ProcessManager {
             "process 插件页面定义返回失败状态"
         );
         ensure_response_size(&response)?;
-        let pages = response
-            .json::<Vec<PageDefinition>>()
+        let definition = response
+            .bytes()
             .await
             .context("解析 process 插件 PageDefinition 失败")?;
-        validate_page_definitions(&pages)?;
+        let pages = az_plugin_manifest::parse_page_definitions(&definition)?;
         Ok(pages)
     }
 
@@ -247,6 +247,40 @@ fn validate_endpoint(endpoint: &str) -> Result<()> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[tokio::test]
+    async fn loads_tree_definition_over_http_and_preserves_leaf_permission() -> Result<()> {
+        use axum::{Json, Router, routing::get};
+        let tree = serde_json::json!({"id":"business","label":"业务","children":[
+            {"id":"reports","label":"报表","children":[
+                {"id":"report","label":"报表页","required_permission":"reports.read",
+                 "body":{"kind":"frontend","entry":"index.html"}}
+            ]}
+        ]});
+        let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await?;
+        let proxy = format!("http://{}", listener.local_addr()?);
+        let router = Router::new().route("/aio/definition", get(move || async move { Json(tree) }));
+        let server = tokio::spawn(async move { axum::serve(listener, router).await });
+        // 通过本地代理模拟隔离容器，测试不连接真实私网服务。
+        let client = reqwest::Client::builder()
+            .proxy(reqwest::Proxy::http(proxy)?)
+            .build()?;
+        let manager = ProcessManager {
+            supervisor: client.clone(),
+            runtime: client,
+        };
+        let result = manager.load_pages("http://172.29.0.2:8080").await;
+        server.abort();
+        let pages = result?;
+        assert_eq!(pages.len(), 1);
+        assert_eq!(pages[0].scene.id, "business");
+        assert_eq!(pages[0].menu_path[0].id, "reports");
+        assert_eq!(
+            pages[0].required_permission.as_deref(),
+            Some("reports.read")
+        );
+        Ok(())
+    }
 
     #[test]
     fn accepts_only_private_fixed_port_endpoints() -> Result<()> {

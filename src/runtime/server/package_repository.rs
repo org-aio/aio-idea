@@ -10,7 +10,7 @@ use super::{
     publication_validation::validate_publish_payload,
     repository::{DiscoveredPlugin, RepositoryInstaller, finish_with_cleanup, published_source_id},
 };
-use crate::runtime::{PageDefinition, PluginRuntime};
+use crate::runtime::PluginRuntime;
 
 impl RepositoryInstaller {
     #[cfg(test)]
@@ -28,7 +28,7 @@ impl RepositoryInstaller {
             .as_ref()
             .context("插件包缺少运行目标")?;
         let pages = if runtime.kind == PluginRuntime::PageDefinition {
-            let pages: Vec<PageDefinition> = serde_json::from_slice(&publication.artifact)
+            let pages = az_plugin_manifest::parse_page_definitions(&publication.artifact)
                 .context("解析插件包 PageDefinition 失败")?;
             validate_page_definitions(&pages)?;
             validate_declared_pages(&publication.manifest, &pages)?;

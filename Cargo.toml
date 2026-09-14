@@ -1,11 +1,11 @@
 [package]
 name = "aio-idea"
-version = "2026.9.11"
+version = "2026.9.14"
 edition = "2024"
 license = "MIT OR Apache-2.0"
 
 [dependencies]
-az-plugin-delivery = { git = "https://github.com/zjarlin/aio-platform.git", rev = "2e03cb9c34bbe357d3a1e9e3cb5789beef310748" }
+az-plugin-delivery = { git = "https://github.com/zjarlin/aio-platform.git", rev = "5f87419434b5bc6c2c44b2f6e29ef22c0f2f3799" }
 base64 = "0.22.1"
 anyhow = "1.0.99"
 async-trait = { version = "0.1", optional = true }
@@ -20,8 +20,8 @@ dill = "0.15.0"
 dioxus = { version = "=0.7.9", default-features = false, features = ["macro", "html", "signals"], optional = true }
 az-dioxus-admin-shell = { git = "https://github.com/zjarlin/dioxus-admin-workbench.git", rev = "22ee3cb9324f90e1833080d01663b92c28929c75", default-features = false, optional = true }
 az-ui-components = { git = "https://github.com/zjarlin/dioxus-admin-workbench.git", rev = "22ee3cb9324f90e1833080d01663b92c28929c75", optional = true }
-az-plugin-manifest = { git = "https://github.com/zjarlin/aio-platform.git", rev = "2e03cb9c34bbe357d3a1e9e3cb5789beef310748", default-features = false }
-az-plugin-package = { git = "https://github.com/zjarlin/aio-platform.git", rev = "2e03cb9c34bbe357d3a1e9e3cb5789beef310748", optional = true }
+az-plugin-manifest = { git = "https://github.com/zjarlin/aio-platform.git", rev = "5f87419434b5bc6c2c44b2f6e29ef22c0f2f3799", default-features = false }
+az-plugin-package = { git = "https://github.com/zjarlin/aio-platform.git", rev = "5f87419434b5bc6c2c44b2f6e29ef22c0f2f3799", optional = true }
 gloo-net = { version = "0.6.0", features = ["http", "json"], optional = true }
 flate2 = { version = "1.1.2", optional = true }
 kuchikiki = { version = "=0.8.8-speedreader", optional = true }
