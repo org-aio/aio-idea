@@ -1,6 +1,6 @@
 # 导航浏览器验收
 
-`preparation.cjs` 使用真实 Compose 和隔离协议夹具，检查桌面/手机在隐藏 37 秒后仍未执行业务请求、首次点击复用实例、画布计数及刷新后的准备。`preparation-live.cjs` 使用正式 Cookie 和只读 Ktor 调用，对比 `baseline`（仅字节预热）与默认模式（实例预备）的耗时；检查原实例、零重复 Wasm 下载、切换状态及桌面/手机截图。输出保存在 `target/preparation-test`，测试只修改浏览器内计数。
+`preparation.cjs` 使用真实 Compose 和隔离协议夹具，检查桌面/手机在隐藏 37 秒后仍未执行业务请求、首次点击复用实例、画布计数及刷新后的准备；`--component` 覆盖 v2 宿主与二进制通信桥。`preparation-live.cjs` 使用正式 Cookie 和只读 Ktor 调用，对比 `baseline`（仅字节预热）与默认模式（实例预备）的耗时；检查原实例、零重复 Wasm 下载、切换状态及桌面/手机截图。`rolling` 模式在部署前保留旧壳，检测新发布物后验证无需刷新仍能挂载并调用新宿主。输出保存在 `target/preparation-test`，测试只修改浏览器内计数。
 
 `node --test tests/browser/asset_cache.cjs tests/browser/asset_preload.cjs tests/browser/asset_bridge.cjs tests/browser/guest-bridge.cjs` 覆盖静态资源摘要、下载接管、后台配额、会话版本校验、临时票据回收及隔离消息来源。`asset-preload-live.cjs` 使用正式 Cookie，只读验证登录后预热不触发业务调用、Memory 首次打开及刷新零 Wasm 重复下载，并记录桌面/手机真实画面和耗时；`baseline` 参数测量未预热版本。输出保存在 `target/component-delivery/asset-preload`。
 

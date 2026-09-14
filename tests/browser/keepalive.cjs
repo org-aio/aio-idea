@@ -11,6 +11,7 @@ const output = resolve('target/keepalive-test');
 const shell = resolve('target/dx/aio-idea/release/web/public');
 const frontend = resolve(process.env.AIO_TEST_KMP_FRONTEND || '../aio-plugin-kmp-example/dist/frontend');
 const guest = Promise.all([readFile('../aio-platform/sdk/web/lifecycle.js', 'utf8'), readFile('src/runtime/server/frontend_guest.js', 'utf8')]).then(parts => parts.join('\n'));
+const componentGuest = Promise.all([...['lifecycle.js', 'wasm.js', 'guest.js'].map(name => readFile(`../aio-platform/sdk/web/${name}`, 'utf8')), readFile('src/runtime/server/components/frontend_assets.js', 'utf8')]).then(parts => parts.join('\n'));
 const modules = readFile('src/runtime/server/vendor/es-module-shims.js');
 const assets = (async () => {
   const entries = await readdir(frontend, { recursive: true, withFileTypes: true });
@@ -20,6 +21,7 @@ const assets = (async () => {
   })));
 })();
 let fixture;
+let abi = 1;
 let origin;
 const grants = new Map();
 const counts = { mount: 0, delete: 0, asset: 0, renew: 0, business: 0 };
@@ -54,17 +56,18 @@ const server = createServer(async (req, res) => {
     if (path === '/api/auth/session') return send(200, { data: fixture.session });
     if (path === '/api/runtime/bootstrap') return send(200, {data: fixture.session ? {catalog: fixture.catalog, permissions: fixture.session.permissions} : null});
     if (path === '/api/runtime/catalog') return send(200, { data: fixture.catalog });
+    if (path === '/api/runtime/components/bridge.js') return res.writeHead(200, { 'content-type': 'text/javascript' }).end(await readFile('../aio-platform/sdk/web/host.mjs'));
     if (path === '/api/runtime/frontend/mount') {
       const chunks = []; for await (const chunk of req) chunks.push(chunk);
       const { page_id } = JSON.parse(Buffer.concat(chunks));
       const token = randomUUID().replaceAll('-', '');
       const version = fixture.catalog.page_versions[page_id];
-      let parts; try { parts = JSON.parse(version); } catch (_) { parts = [version, version, version]; }
+      let parts; try { parts = JSON.parse(version); } catch (_) { parts = abi === 2 ? ['', ...version.split(':')] : [version, version, version]; }
       grants.set(token, { page_id, version, context: fixture.catalog.context }); counts.mount++;
       const asset_sizes = Object.fromEntries(await Promise.all(Object.keys(await assets).map(async name => [name, (await file(frontend, name)).length])));
-      return send(200, { data: { token, revision: parts[1], generation: parts[2], session_context: fixture.catalog.session_context, context: fixture.catalog.context, assets: await assets, asset_sizes, src: `/api/runtime/frontend/assets/${token}/index.html` } });
+      return send(200, { data: { abi, token, revision: parts[1], generation: parts[2], session_context: fixture.catalog.session_context, context: fixture.catalog.context, assets: await assets, asset_sizes, src: `/api/runtime/${abi === 2 ? 'components' : 'frontend'}/assets/${token}/index.html` } });
     }
-    const route = path.match(/^\/api\/runtime\/frontend\/([^/]+)(?:\/(request|renew))?$/);
+    const route = path.match(/^\/api\/runtime\/(?:frontend|components)\/([^/]+)(?:\/(request|renew))?$/);
     if (route) {
       const [_, token, action] = route;
       if (req.method === 'DELETE') { counts.delete++; grants.delete(token); return res.writeHead(204).end(); }
@@ -72,9 +75,10 @@ const server = createServer(async (req, res) => {
       if (!grant || grant.context !== fixture.catalog.context || grant.version !== fixture.catalog.page_versions[grant.page_id]) return send(403, { error: 'Mount revoked' });
       if (action === 'renew') { counts.renew++; return res.writeHead(204).end(); }
       counts.business++;
-      return send(200, { data: { status: 200, content_type: 'application/json', body: JSON.stringify({ items: [], total: 0, completed: 0, tenantId: 'test', userId: 'tester', serverTime: '2026-09-11', storage: 'protocol-fixture' }) } });
+      const body = JSON.stringify({ items: [], total: 0, completed: 0, tenantId: 'test', userId: 'tester', serverTime: '2026-09-11', storage: 'protocol-fixture' });
+      return send(200, { data: abi === 2 ? { status: 200, headers: [], body: Array.from(Buffer.from(body)) } : { status: 200, content_type: 'application/json', body } });
     }
-    const asset = path.match(/^\/api\/runtime\/frontend\/assets\/([^/]+)\/(.+)$/);
+    const asset = path.match(/^\/api\/runtime\/(?:frontend|components)\/assets\/([^/]+)\/(.+)$/);
     let bytes;
     let extension = extname(path);
     const headers = { 'content-type': mime[extension] || 'application/octet-stream', 'cache-control': 'no-store' };
@@ -82,7 +86,7 @@ const server = createServer(async (req, res) => {
       const [_, token, name] = asset;
       if (!grants.has(token)) return send(401, { error: 'Mount missing' });
       counts.asset++;
-      bytes = name === '__aio_bridge.js' ? await guest : name === '__aio_modules.js' ? await modules : await file(frontend, name);
+      bytes = name === '__aio_bridge.js' ? await (abi === 2 ? componentGuest : guest) : name === '__aio_modules.js' ? await modules : await file(frontend, name);
       headers['access-control-allow-origin'] = '*';
       if (name === 'index.html') {
         const document = parse(bytes.toString());
@@ -93,9 +97,10 @@ const server = createServer(async (req, res) => {
           for (const child of node.childNodes || []) normalize(child);
         };
         normalize(document);
-        head.childNodes.unshift(element('base', { href: `${origin}/api/runtime/frontend/assets/${token}/` }), element('script', { src: '__aio_bridge.js', 'data-token': token }), element('script', { src: '__aio_modules.js' }));
+        const prefix = `${origin}/api/runtime/${abi === 2 ? 'components' : 'frontend'}/assets/${token}/`;
+        head.childNodes.unshift(element('base', { href: prefix }), element('script', { src: '__aio_bridge.js', 'data-token': token, 'data-root': prefix }), element('script', { src: '__aio_modules.js' }));
         bytes = serialize(document);
-        headers['content-security-policy'] = `sandbox allow-scripts; default-src 'none'; script-src ${origin} blob: 'unsafe-inline' 'unsafe-eval' 'wasm-unsafe-eval'; connect-src blob: ${origin}/api/runtime/frontend/assets/; img-src ${origin} data: blob:; font-src ${origin} data:; style-src 'unsafe-inline' blob:; worker-src 'none';`;
+        headers['content-security-policy'] = `sandbox allow-scripts; default-src 'none'; script-src ${origin} blob: 'unsafe-inline' 'unsafe-eval' 'wasm-unsafe-eval'; connect-src blob: ${prefix}; img-src ${origin} data: blob:; font-src ${origin} data:; style-src 'unsafe-inline' blob:; worker-src 'none';`;
       }
     } else {
       if (path === '/favicon.ico') return res.writeHead(204).end();
@@ -263,9 +268,10 @@ async function run(browser, mobile) {
   } finally { await context.close(); }
 }
 
-module.exports.startFixture = async () => {
+module.exports.startFixture = async (protocol = 1) => {
+  abi = protocol;
   reset();
-  fixture.catalog.page_versions['Compose 保活'] = JSON.stringify(['v1', 'v1', 'v1']);
+  fixture.catalog.page_versions['Compose 保活'] = abi === 2 ? 'v1:v1' : JSON.stringify(['v1', 'v1', 'v1']);
   await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
   origin = `http://127.0.0.1:${server.address().port}`;
   return { origin, counts, fixture, close: () => new Promise(resolve => server.close(resolve)) };

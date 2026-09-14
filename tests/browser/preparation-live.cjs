@@ -57,7 +57,8 @@ async function run(browser, mobile) {
   page.on('pageerror', error => errors.push(redact(error.message)));
   page.on('request', request => {
     const pathname = new URL(request.url()).pathname;
-    if (/\/assets\/.*\.wasm$/.test(pathname)) wasmDownloads++;
+    const ticket = pathname.match(/\/assets\/([^/]+)\/.*\.wasm$/)?.[1];
+    if (ticket && mounts.some(item => item.page === plugin.id && item.token === ticket)) wasmDownloads++;
     if (warming && /\/(frontend|components)\/[^/]+\/request$/.test(pathname)) backgroundBusiness++;
     if (request.method() === 'DELETE' && pathname.startsWith('/api/runtime/frontend/')) released.add(pathname.split('/').at(-1));
   });

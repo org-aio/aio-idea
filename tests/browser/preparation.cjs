@@ -5,7 +5,8 @@ const { chromium } = require('playwright');
 const { PNG } = require('pngjs');
 const { startFixture } = require('./keepalive.cjs');
 
-const output = resolve('target/preparation-test');
+const component = process.argv.includes('--component');
+const output = resolve('target/preparation-test', component ? 'component' : '.');
 async function run(browser, server, mobile) {
   const context = await browser.newContext({ viewport: mobile ? { width: 390, height: 844 } : { width: 1440, height: 1000 } });
   const page = await context.newPage();
@@ -70,7 +71,7 @@ async function run(browser, server, mobile) {
 
 (async () => {
   await mkdir(output, { recursive: true });
-  const server = await startFixture();
+  const server = await startFixture(component ? 2 : 1);
   const browser = await chromium.launch({ channel: 'chrome', headless: true });
   try {
     const results = [];
