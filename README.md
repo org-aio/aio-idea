@@ -1,5 +1,7 @@
 # aio-idea
 
+- [宿主界面重构设计与验收（中文）](docs/ui-refactor/README.md)
+
 这是基于 [aio-platform](https://github.com/zjarlin/aio-platform) 组装的应用产品和官方插件中心。系统引导能力来自 Cargo 中锁定完整提交 SHA 的独立插件仓库；`aio.toml` 定义默认租户首次启动时安装的运行时 Git 组合。活动版本、租户绑定、市场元数据和完整 `.aio-plugin` 二进制包保存在 PostgreSQL，本地版本目录只是可恢复的运行缓存。
 
 开发者在本地完成构建与 `aio plugin package` 后，使用来源绑定凭证执行 `aio plugin publish` 直接上传二进制包。发布不依赖 GitHub Actions，不要求提交编译产物；验证与健康检查成功后在线激活，失败保留旧版本。成功发布的二进制包可以下载、在其他租户安装和回滚，无需回连 Git。当前动态目标为 PageDefinition、Wasm Component 和隔离 process；Dioxus 原生源码插件仍通过整体构建装配。

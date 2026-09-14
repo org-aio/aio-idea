@@ -1,0 +1,194 @@
+{
+  "workbench": {
+    "results": [
+      {
+        "width": 390,
+        "navigation": true,
+        "preferences": true,
+        "userIsolation": true,
+        "systemTheme": true,
+        "filters": true,
+        "releases": true,
+        "refreshScroll": true
+      },
+      {
+        "width": 768,
+        "navigation": true,
+        "preferences": true,
+        "userIsolation": true,
+        "systemTheme": true,
+        "filters": true,
+        "releases": true,
+        "refreshScroll": true
+      },
+      {
+        "width": 1440,
+        "navigation": true,
+        "preferences": true,
+        "userIsolation": true,
+        "systemTheme": true,
+        "filters": true,
+        "releases": true,
+        "refreshScroll": true
+      },
+      {
+        "login": true,
+        "loading": true,
+        "empty": true,
+        "failureRetry": true,
+        "denied": true
+      }
+    ],
+    "registryRequests": []
+  },
+  "cache": [
+    {
+      "viewport": "desktop",
+      "warmMs": 28.829499999999825,
+      "changedCanvasPixels": 29700,
+      "warmMounts": 0,
+      "warmDeletes": 0,
+      "warmAssets": 0,
+      "retainedState": true,
+      "tenantReturnState": true,
+      "oldTicketRevoked": true,
+      "reloadModuleDownloads": 0,
+      "loginCacheIsolation": true,
+      "fullscreenReturn": true,
+      "versionInvalidation": true,
+      "lruEviction": true,
+      "permissionRemoval": true,
+      "contextInvalidation": true,
+      "consoleErrors": 0
+    },
+    {
+      "viewport": "mobile",
+      "warmMs": 30.558208000000377,
+      "changedCanvasPixels": 11041,
+      "warmMounts": 0,
+      "warmDeletes": 0,
+      "warmAssets": 0,
+      "retainedState": true,
+      "tenantReturnState": true,
+      "oldTicketRevoked": true,
+      "reloadModuleDownloads": 0,
+      "loginCacheIsolation": true,
+      "fullscreenReturn": true,
+      "versionInvalidation": true,
+      "lruEviction": true,
+      "permissionRemoval": true,
+      "contextInvalidation": true,
+      "consoleErrors": 0
+    }
+  ],
+  "account": [
+    {
+      "viewport": "desktop",
+      "login": true,
+      "fullscreenReturn": true,
+      "appearanceSaved": true,
+      "registryEndpointRemoved": true,
+      "tenantCreateRenameSwitch": true,
+      "noDocumentReload": true
+    },
+    {
+      "viewport": "mobile",
+      "login": true,
+      "fullscreenReturn": true,
+      "appearanceSaved": true,
+      "registryEndpointRemoved": true,
+      "tenantCreateRenameSwitch": true,
+      "noDocumentReload": true
+    },
+    {
+      "passwordConfirmation": true,
+      "passwordChange": true,
+      "otherSessionsRevoked": true,
+      "currentSessionPreserved": true
+    }
+  ],
+  "files": [
+    {
+      "viewport": "desktop",
+      "search": true,
+      "filter": true,
+      "sort": true,
+      "pagination": true,
+      "selection": true,
+      "upload": true,
+      "downloadBytes": true,
+      "deleteConfirmation": true,
+      "bulkDelete": true,
+      "focusTrap": true,
+      "fonts": true,
+      "dark": true,
+      "zoom200": true,
+      "retry": true,
+      "lightContrast": {
+        "foreground/background": 16.49,
+        "secondary-foreground/card": 7.73,
+        "muted-foreground/card": 4.83,
+        "primary-foreground/primary": 5.07,
+        "success/success-bg": 6.81,
+        "warning/warning-bg": 6.84,
+        "destructive/destructive-bg": 5.91,
+        "info/info-bg": 6.16,
+        "input/card": 3.62,
+        "ring/background": 4.71
+      },
+      "darkContrast": {
+        "foreground/background": 17.06,
+        "secondary-foreground/card": 10.84,
+        "muted-foreground/card": 6.25,
+        "primary-foreground/primary": 8.06,
+        "success/success-bg": 10.82,
+        "warning/warning-bg": 10.19,
+        "destructive/destructive-bg": 8.31,
+        "info/info-bg": 8.51,
+        "input/card": 3.31,
+        "ring/background": 10.04
+      }
+    },
+    {
+      "viewport": "mobile",
+      "search": true,
+      "filter": true,
+      "sort": true,
+      "pagination": true,
+      "selection": true,
+      "upload": true,
+      "downloadBytes": true,
+      "deleteConfirmation": true,
+      "bulkDelete": true,
+      "focusTrap": true,
+      "fonts": true,
+      "dark": true,
+      "zoom200": true,
+      "retry": true,
+      "lightContrast": {
+        "foreground/background": 16.49,
+        "secondary-foreground/card": 7.73,
+        "muted-foreground/card": 4.83,
+        "primary-foreground/primary": 5.07,
+        "success/success-bg": 6.81,
+        "warning/warning-bg": 6.84,
+        "destructive/destructive-bg": 5.91,
+        "info/info-bg": 6.16,
+        "input/card": 3.62,
+        "ring/background": 4.71
+      },
+      "darkContrast": {
+        "foreground/background": 17.06,
+        "secondary-foreground/card": 10.84,
+        "muted-foreground/card": 6.25,
+        "primary-foreground/primary": 8.06,
+        "success/success-bg": 10.82,
+        "warning/warning-bg": 10.19,
+        "destructive/destructive-bg": 8.31,
+        "info/info-bg": 8.51,
+        "input/card": 3.31,
+        "ring/background": 10.04
+      }
+    }
+  ]
+}
