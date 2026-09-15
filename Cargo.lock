@@ -253,7 +253,7 @@ dependencies = [
 [[package]]
 name = "aio-plugin-marketplace-client"
 version = "0.1.0"
-source = "git+https://github.com/zjarlin/aio-plugin-marketplace.git?rev=a17336e585abc95c254204d9d833760cc7f574ef#a17336e585abc95c254204d9d833760cc7f574ef"
+source = "git+https://github.com/zjarlin/aio-plugin-marketplace.git?rev=ddad739d2cf9480bbc50b315eb28628c27846523#ddad739d2cf9480bbc50b315eb28628c27846523"
 dependencies = [
  "az-dioxus-admin-shell",
  "az-tool 0.1.0 (git+https://github.com/zjarlin/aio-platform.git?rev=d83cda2f6be3200c4fc8204c08427293b608a019)",
@@ -269,7 +269,7 @@ dependencies = [
 [[package]]
 name = "aio-plugin-marketplace-server"
 version = "0.1.0"
-source = "git+https://github.com/zjarlin/aio-plugin-marketplace.git?rev=a17336e585abc95c254204d9d833760cc7f574ef#a17336e585abc95c254204d9d833760cc7f574ef"
+source = "git+https://github.com/zjarlin/aio-plugin-marketplace.git?rev=ddad739d2cf9480bbc50b315eb28628c27846523#ddad739d2cf9480bbc50b315eb28628c27846523"
 dependencies = [
  "anyhow",
  "axum",
@@ -279,7 +279,7 @@ dependencies = [
 [[package]]
 name = "aio-plugin-rbac-client"
 version = "0.1.0"
-source = "git+https://github.com/zjarlin/aio-plugin-rbac.git?rev=7c954695525197dab0892e8b6e7e646d6e2bb596#7c954695525197dab0892e8b6e7e646d6e2bb596"
+source = "git+https://github.com/zjarlin/aio-plugin-rbac.git?rev=c9a03a4cc5d0072b1f739860f33b39bc9415bdae#c9a03a4cc5d0072b1f739860f33b39bc9415bdae"
 dependencies = [
  "aio-plugin-rbac-model",
  "az-dioxus-admin-shell",
@@ -295,7 +295,7 @@ dependencies = [
 [[package]]
 name = "aio-plugin-rbac-model"
 version = "0.1.0"
-source = "git+https://github.com/zjarlin/aio-plugin-rbac.git?rev=7c954695525197dab0892e8b6e7e646d6e2bb596#7c954695525197dab0892e8b6e7e646d6e2bb596"
+source = "git+https://github.com/zjarlin/aio-plugin-rbac.git?rev=c9a03a4cc5d0072b1f739860f33b39bc9415bdae#c9a03a4cc5d0072b1f739860f33b39bc9415bdae"
 dependencies = [
  "serde",
 ]
@@ -303,7 +303,7 @@ dependencies = [
 [[package]]
 name = "aio-plugin-rbac-server"
 version = "0.1.0"
-source = "git+https://github.com/zjarlin/aio-plugin-rbac.git?rev=7c954695525197dab0892e8b6e7e646d6e2bb596#7c954695525197dab0892e8b6e7e646d6e2bb596"
+source = "git+https://github.com/zjarlin/aio-plugin-rbac.git?rev=c9a03a4cc5d0072b1f739860f33b39bc9415bdae#c9a03a4cc5d0072b1f739860f33b39bc9415bdae"
 dependencies = [
  "aio-plugin-identity-server",
  "aio-plugin-rbac-model",
@@ -714,7 +714,7 @@ dependencies = [
 [[package]]
 name = "az-plugin-bundle"
 version = "2026.5.10"
-source = "git+https://github.com/zjarlin/aio-platform.git?rev=d9b52234621e0818545b052003d8413087969a13#d9b52234621e0818545b052003d8413087969a13"
+source = "git+https://github.com/zjarlin/aio-platform.git?rev=75287c15902d6dd953fd63e4f8595ba3b16e40b9#75287c15902d6dd953fd63e4f8595ba3b16e40b9"
 dependencies = [
  "anyhow",
  "az-plugin-contract",
@@ -732,7 +732,7 @@ dependencies = [
 [[package]]
 name = "az-plugin-contract"
 version = "2026.5.10"
-source = "git+https://github.com/zjarlin/aio-platform.git?rev=d9b52234621e0818545b052003d8413087969a13#d9b52234621e0818545b052003d8413087969a13"
+source = "git+https://github.com/zjarlin/aio-platform.git?rev=75287c15902d6dd953fd63e4f8595ba3b16e40b9#75287c15902d6dd953fd63e4f8595ba3b16e40b9"
 dependencies = [
  "serde",
  "serde_json",
@@ -741,7 +741,7 @@ dependencies = [
 [[package]]
 name = "az-plugin-delivery"
 version = "2026.5.10"
-source = "git+https://github.com/zjarlin/aio-platform.git?rev=d9b52234621e0818545b052003d8413087969a13#d9b52234621e0818545b052003d8413087969a13"
+source = "git+https://github.com/zjarlin/aio-platform.git?rev=75287c15902d6dd953fd63e4f8595ba3b16e40b9#75287c15902d6dd953fd63e4f8595ba3b16e40b9"
 dependencies = [
  "anyhow",
  "serde",
@@ -750,8 +750,8 @@ dependencies = [
 
 [[package]]
 name = "az-plugin-development"
-version = "2026.9.16"
-source = "git+https://github.com/zjarlin/aio-platform.git?rev=d9b52234621e0818545b052003d8413087969a13#d9b52234621e0818545b052003d8413087969a13"
+version = "2026.9.17"
+source = "git+https://github.com/zjarlin/aio-platform.git?rev=75287c15902d6dd953fd63e4f8595ba3b16e40b9#75287c15902d6dd953fd63e4f8595ba3b16e40b9"
 dependencies = [
  "anyhow",
  "az-plugin-manifest",
@@ -765,8 +765,8 @@ dependencies = [
 
 [[package]]
 name = "az-plugin-host"
-version = "2026.9.16"
-source = "git+https://github.com/zjarlin/aio-platform.git?rev=d9b52234621e0818545b052003d8413087969a13#d9b52234621e0818545b052003d8413087969a13"
+version = "2026.9.17"
+source = "git+https://github.com/zjarlin/aio-platform.git?rev=75287c15902d6dd953fd63e4f8595ba3b16e40b9#75287c15902d6dd953fd63e4f8595ba3b16e40b9"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -779,7 +779,7 @@ dependencies = [
  "az-plugin-manifest",
  "az-plugin-package",
  "az-plugin-runtime",
- "az-tool 0.1.0 (git+https://github.com/zjarlin/aio-platform.git?rev=d9b52234621e0818545b052003d8413087969a13)",
+ "az-tool 0.1.0 (git+https://github.com/zjarlin/aio-platform.git?rev=75287c15902d6dd953fd63e4f8595ba3b16e40b9)",
  "az-ui-components",
  "base64",
  "dill",
@@ -809,7 +809,7 @@ dependencies = [
 [[package]]
 name = "az-plugin-manifest"
 version = "2026.5.10"
-source = "git+https://github.com/zjarlin/aio-platform.git?rev=d9b52234621e0818545b052003d8413087969a13#d9b52234621e0818545b052003d8413087969a13"
+source = "git+https://github.com/zjarlin/aio-platform.git?rev=75287c15902d6dd953fd63e4f8595ba3b16e40b9#75287c15902d6dd953fd63e4f8595ba3b16e40b9"
 dependencies = [
  "anyhow",
  "semver",
@@ -825,7 +825,7 @@ dependencies = [
 [[package]]
 name = "az-plugin-package"
 version = "2026.5.10"
-source = "git+https://github.com/zjarlin/aio-platform.git?rev=d9b52234621e0818545b052003d8413087969a13#d9b52234621e0818545b052003d8413087969a13"
+source = "git+https://github.com/zjarlin/aio-platform.git?rev=75287c15902d6dd953fd63e4f8595ba3b16e40b9#75287c15902d6dd953fd63e4f8595ba3b16e40b9"
 dependencies = [
  "anyhow",
  "az-plugin-manifest",
@@ -841,7 +841,7 @@ dependencies = [
 [[package]]
 name = "az-plugin-runtime"
 version = "2026.5.10"
-source = "git+https://github.com/zjarlin/aio-platform.git?rev=d9b52234621e0818545b052003d8413087969a13#d9b52234621e0818545b052003d8413087969a13"
+source = "git+https://github.com/zjarlin/aio-platform.git?rev=75287c15902d6dd953fd63e4f8595ba3b16e40b9#75287c15902d6dd953fd63e4f8595ba3b16e40b9"
 dependencies = [
  "aes-gcm",
  "anyhow",
@@ -865,7 +865,7 @@ dependencies = [
 [[package]]
 name = "az-tool"
 version = "0.1.0"
-source = "git+https://github.com/zjarlin/aio-platform.git?rev=d83cda2f6be3200c4fc8204c08427293b608a019#d83cda2f6be3200c4fc8204c08427293b608a019"
+source = "git+https://github.com/zjarlin/aio-platform.git?rev=75287c15902d6dd953fd63e4f8595ba3b16e40b9#75287c15902d6dd953fd63e4f8595ba3b16e40b9"
 dependencies = [
  "anyhow",
  "semver",
@@ -877,7 +877,7 @@ dependencies = [
 [[package]]
 name = "az-tool"
 version = "0.1.0"
-source = "git+https://github.com/zjarlin/aio-platform.git?rev=d9b52234621e0818545b052003d8413087969a13#d9b52234621e0818545b052003d8413087969a13"
+source = "git+https://github.com/zjarlin/aio-platform.git?rev=d83cda2f6be3200c4fc8204c08427293b608a019#d83cda2f6be3200c4fc8204c08427293b608a019"
 dependencies = [
  "anyhow",
  "semver",

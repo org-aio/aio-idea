@@ -33,10 +33,6 @@ impl IdentityProvider for ProductIdentity {
     async fn session_active(&self, session: &str, tenant: &str, user: &str) -> Result<bool> {
         Ok(sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM auth_sessions WHERE id=$1 AND tenant_id=$2 AND user_id=$3 AND expires_at>now())").bind(session).bind(tenant).bind(user).fetch_one(&self.pool).await?)
     }
-    async fn install_permissions(&self, tenant: &str, permissions: &[String]) -> Result<()> {
-        sqlx::query("INSERT INTO role_permissions(tenant_id,role_id,permission) SELECT $1,r.role_id,p FROM role_permissions r CROSS JOIN unnest($2::TEXT[]) p WHERE r.tenant_id=$1 AND r.permission='plugin:manage' ON CONFLICT DO NOTHING").bind(tenant).bind(permissions).execute(&self.pool).await?;
-        Ok(())
-    }
     async fn authenticate(
         &self,
         headers: &axum::http::HeaderMap,
