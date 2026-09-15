@@ -26,7 +26,9 @@ curl --fail https://aio.addzero.site/health
 
 同日的宿主后台静态资源预热、v2 持久缓存和首屏耗时对比见 [缓存验收](asset-cache-acceptance.md)。刷新正式页面后自动启用，首次后台下载完成后可跨页面重载复用。
 
-Agent 使用原生 v2 整包中的 Linux ELF 与 Compose 前端，Pi SDK 依赖由预置 Node 镜像提供。宿主和监督器共同读取私有 `/opt/aio-idea/process.env`，以 `AIO_PROCESS_ROOT` 保存运行授权及 socket；加密主密钥仍由 Component keyring 管理。模型只能通过宿主 broker 访问清单及宿主共同批准的 HTTPS 基址，容器自身使用 `--network=none`。
+Agent 使用原生 v2 整包中的 Linux ELF 与 Compose 前端，Pi SDK 依赖由预置 Node 镜像提供。宿主和监督器共同读取私有 `/opt/aio-idea/process.env`，以 `AIO_PROCESS_ROOT` 保存运行授权及 socket；加密主密钥仍由 Component keyring 管理。模型只能通过宿主 broker 访问清单及宿主共同批准的基址，容器自身使用 `--network=none`。基址允许 HTTPS；私网 HTTP 必须使用固定的 RFC1918 IPv4 或 IPv6 ULA 地址，HTTP 域名、公网、回环和链路本地地址不接受。
+
+配置私网模型网关时，先备份 `process.env`，将完整基址同时加入插件清单的 `plugin.runtime.process.endpoints` 和宿主的 `AIO_PROCESS_ENDPOINTS`（逗号分隔，保留已有地址），再发布支持该规则的宿主与 Agent 整包。仅向 Agent 数据库保存模型地址不会扩大进程授权。模型配置保存后，还需验证真实推理成功，并将目标记忆空间绑定到该模型；`/models` 返回模型 ID 不能代替推理检查。定时采集使用笔记所有者的 AIO 登录会话。
 
 上线前运行 `component-storage.cjs backup` 和 `backup-components`，同时备份宿主数据库、插件数据库和宿主密钥目录。构建 Agent 仓库的 `Containerfile` 中 `runtime` 目标并核对不可变镜像 ID，然后设置 `AIO_PROCESS_IMAGE=sha256:...` 执行 `node deploy/252/component-storage.cjs processes`，登记预置镜像、模型地址和持久目录。模型未配置时仍接收加密资料，整理任务等待空间绑定模型。
 
