@@ -5,7 +5,7 @@ edition = "2024"
 license = "MIT OR Apache-2.0"
 
 [dependencies]
-az-plugin-host = { git = "https://github.com/zjarlin/aio-platform.git", rev = "4d27918edc289569885c7c5a0a7042c7bbbc32ec", default-features = false }
+az-plugin-host = { git = "https://github.com/zjarlin/aio-platform.git", rev = "d83cda2f6be3200c4fc8204c08427293b608a019", default-features = false }
 anyhow = "1.0.99"
 async-trait = { version = "0.1", optional = true }
 axum = { version = "0.8.6", optional = true }
@@ -24,8 +24,8 @@ aio_plugin_dictionary_client = { package = "aio-plugin-dictionary-client", git =
 aio_plugin_dictionary_server = { package = "aio-plugin-dictionary-server", git = "https://github.com/zjarlin/aio-plugin-dictionary.git", rev = "35283ae2b1d78c6dd7ee23c5330106617d701f81", optional = true }
 aio_plugin_file_client = { package = "aio-plugin-file-client", git = "https://github.com/zjarlin/aio-plugin-file.git", rev = "d7d5056c382c230ecf460996d7ec284cae0f14ac", optional = true }
 aio_plugin_file_server = { package = "aio-plugin-file-server", git = "https://github.com/zjarlin/aio-plugin-file.git", rev = "d7d5056c382c230ecf460996d7ec284cae0f14ac", optional = true }
-aio_plugin_marketplace_client = { package = "aio-plugin-marketplace-client", git = "https://github.com/zjarlin/aio-plugin-marketplace.git", rev = "e35b2fd942f4ee6b33b947b5da11235f5369ed76", optional = true }
-aio_plugin_marketplace_server = { package = "aio-plugin-marketplace-server", git = "https://github.com/zjarlin/aio-plugin-marketplace.git", rev = "e35b2fd942f4ee6b33b947b5da11235f5369ed76", optional = true }
+aio_plugin_marketplace_client = { package = "aio-plugin-marketplace-client", git = "https://github.com/zjarlin/aio-plugin-marketplace.git", rev = "a17336e585abc95c254204d9d833760cc7f574ef", optional = true }
+aio_plugin_marketplace_server = { package = "aio-plugin-marketplace-server", git = "https://github.com/zjarlin/aio-plugin-marketplace.git", rev = "a17336e585abc95c254204d9d833760cc7f574ef", optional = true }
 aio_plugin_settings = { package = "aio-plugin-settings", git = "https://github.com/zjarlin/aio-plugin-settings.git", rev = "9bcedcca63e27ac0c4f198b51c1f5f80f3cd329a", optional = true }
 aio_plugin_identity_client = { package = "aio-plugin-identity-client", git = "https://github.com/zjarlin/aio-plugin-identity.git", rev = "8acbefd58423bb01c065b3477dc06305a11df62d", optional = true }
 aio_plugin_identity_server = { package = "aio-plugin-identity-server", git = "https://github.com/zjarlin/aio-plugin-identity.git", rev = "340b5f2f3956100a32ecbbdcee5cccb6dc84c9dd", optional = true }
@@ -47,9 +47,9 @@ server = ["az-plugin-host/server", "dep:async-trait","dep:axum", "dep:sqlx", "de
 unsafe_code = "forbid"
 
 [dev-dependencies]
-az-plugin-host = { git = "https://github.com/zjarlin/aio-platform.git", rev = "4d27918edc289569885c7c5a0a7042c7bbbc32ec", default-features = false, features = ["test-support"] }
+az-plugin-host = { git = "https://github.com/zjarlin/aio-platform.git", rev = "d83cda2f6be3200c4fc8204c08427293b608a019", default-features = false, features = ["test-support"] }
 tempfile = "3.23.0"
-az-plugin-package = { git = "https://github.com/zjarlin/aio-platform.git", rev = "4d27918edc289569885c7c5a0a7042c7bbbc32ec" }
+az-plugin-package = { git = "https://github.com/zjarlin/aio-platform.git", rev = "d83cda2f6be3200c4fc8204c08427293b608a019" }
 kuchikiki = { version = "=0.8.8-speedreader" }
 reqwest = { version = "0.12.23", default-features = false, features = ["json", "rustls-tls", "stream"] }
 tower-http = { version = "0.6.2", features = ["fs", "compression-gzip"] }
