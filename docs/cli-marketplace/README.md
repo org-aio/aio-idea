@@ -1,5 +1,9 @@
 # CLI 插件市场验收
 
+## CLI 初始化与自动发布
+
+通过 AIO 初始化 TypeScript CLI，或将已有 npm CLI 接入默认分支自动发布。公开 npm、市场同步、Windows 回归和线上页面证据见 [自动发布验收](automatic-release.md)。
+
 ## 2026-09-15 线上上架
 
 [线上 AIO](https://aio.addzero.site) 已部署 CLI 市场，刷新页面后进入 **插件市场 → CLI**，搜索 **Codex 模型同步与 Auto Router** 即可看到 `codex-model-sync 0.4.1`。点击 **安装到本机** 使用 `aio://install/codex-model-sync?version=0.4.1`；首次使用按详情页说明安装 AIO Helper，也可直接在终端执行：

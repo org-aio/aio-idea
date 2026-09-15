@@ -1,0 +1,34 @@
+{
+  "url": "https://aio.addzero.site",
+  "checkedAt": "2026-09-15T10:40:07.913Z",
+  "viewports": [
+    {
+      "mobile": false,
+      "title": "Codex 模型同步与 Auto Router",
+      "version": "0.4.2-dev.3.gda1121712ffd",
+      "readme": true,
+      "installUri": "aio://install/codex-model-sync?version=0.4.2-dev.3.gda1121712ffd",
+      "hostInstallRequests": 0,
+      "consoleErrors": []
+    },
+    {
+      "mobile": true,
+      "title": "Codex 模型同步与 Auto Router",
+      "version": "0.4.2-dev.3.gda1121712ffd",
+      "readme": true,
+      "installUri": "aio://install/codex-model-sync?version=0.4.2-dev.3.gda1121712ffd",
+      "hostInstallRequests": 0,
+      "consoleErrors": []
+    }
+  ],
+  "aioVersion": "2026.9.17",
+  "revision": "da1121712ffd886734af808dfb9d6416868bb039",
+  "workflow": "https://github.com/zjarlin/codex-model-sync/actions/runs/34958860751",
+  "attempt": 1,
+  "npm": {
+    "latest": "0.4.1",
+    "next": "0.4.2-dev.3.gda1121712ffd",
+    "trustedPublisher": "github",
+    "integrity": "sha512-/1WPDLIuKLlG4C0dPW0FsfBwlOyDLtz9IFWUQchzw0ZiGuE8tgJVWoP5w97Y7AmjRyk91GJ40Fm13HPArDkXZA=="
+  }
+}
