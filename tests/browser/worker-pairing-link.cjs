@@ -84,6 +84,13 @@ async function main() {
     await page.unroute(endpoint);
     await page.reload();
     await authorize().waitFor();
+    await page.route(endpoint,route=>route.request().method()==='POST'
+      ? route.fulfill({status:400,contentType:'application/json',body:JSON.stringify({error:'当前账号设备数量已达上限'})})
+      : route.continue());
+    await authorize().click();
+    await page.getByRole('alert').filter({hasText:'设备数量已达上限'}).waitFor();
+    assert.equal(new URL(page.url()).searchParams.get('worker_pair'),pending.code);
+    await page.unroute(endpoint);
     await page.getByRole('button',{name:'关闭',exact:true}).click();
     await cleared();
 
@@ -95,7 +102,7 @@ async function main() {
     await page.getByRole('status').filter({hasText:'不影响已配对设备'}).waitFor();
     await cleared();
     assert.deepEqual(errors,[]);
-    console.log(JSON.stringify({pendingReload:true,approvedRefresh:true,consumedLink:true,dismissedLink:true,transientFailurePreserved:true,concurrentApproval:true,viewports:[1440,390],pageErrors:errors}));
+    console.log(JSON.stringify({pendingReload:true,approvedRefresh:true,consumedLink:true,dismissedLink:true,transientFailurePreserved:true,unrelated400Preserved:true,concurrentApproval:true,viewports:[1440,390],pageErrors:errors}));
   } finally {
     for (const pairing of created) {
       await context.request.post(`${base}/api/runtime/workers/pairings/${pairing.code}`);
