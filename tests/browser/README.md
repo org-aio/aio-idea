@@ -69,3 +69,13 @@ AIO_TEST_SHELL=/path/to/aio-idea/target/dx/aio-idea/release/web/public AIO_TEST_
 `component-family.cjs` 发布真实 Agent Memory 整包，验证父仓库关系、树层级、折叠展开及父插件未启用时拒绝安装。它不创建占位父包，报告中的 `parentPublished` 明确记录真实 Agent 是否已发布。可用 `AIO_BROWSER_PROXY` 配置浏览器代理；本次公网交付结果见 `deploy/252/component-acceptance.md`。
 
 `plugin-names-live.cjs` 只读检查正式市场的中文插件名与父节点名称，验证桌面、手机的列表和详情，并将截图与结果保存到 `target/component-delivery/chinese-names/`。
+
+## 插件设置分组
+
+`plugin-settings.cjs` 在两个验收插件均未安装的专用租户中，验证设置中心的来源小字、内嵌插件设置、桌面/手机布局、分组切换卸载、安装/卸载后的动态入口，以及合成 Tavily Key 的保存、不回显和清除。不会启用搜索或调用第三方服务；结束时恢复安装状态。
+
+```sh
+AIO_URL=https://aio.addzero.site AIO_COOKIE_FILE=/path/to/private-cookie.txt node tests/browser/plugin-settings.cjs
+```
+
+需要 Node 能解析 Playwright 和本机 Chrome。截图及报告保存在 `target/plugin-settings-test`。

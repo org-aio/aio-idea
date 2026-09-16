@@ -25,6 +25,9 @@ async function main() {
     const response = await context.request.fetch(base + endpoint, { method, data, timeout: 180000 });
     const body = await response.json();
     assert(response.ok(), `${endpoint}: ${response.status()} ${body.error || ''}`);
+    if (method === 'POST' && endpoint.startsWith('/api/runtime/plugins/')) {
+      await page.evaluate(() => window.dispatchEvent(new Event('aio:catalog-invalidated')));
+    }
     return body.data;
   }
   async function plugin(frame, method, endpoint, body) {
