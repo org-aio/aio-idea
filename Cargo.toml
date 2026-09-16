@@ -5,7 +5,7 @@ edition = "2024"
 license = "MIT OR Apache-2.0"
 
 [dependencies]
-az-plugin-host = { git = "https://github.com/zjarlin/aio-platform.git", rev = "8112d1af5442eb334ae0355d18ddcc06ef94a8a9", default-features = false }
+az-plugin-host = { git = "https://github.com/zjarlin/aio-platform.git", rev = "d8476dee90cb9d36ac70896416bdefcef84cb32f", default-features = false }
 anyhow = "1.0.99"
 async-trait = { version = "0.1", optional = true }
 axum = { version = "0.8.6", optional = true }
@@ -47,9 +47,9 @@ server = ["az-plugin-host/server", "dep:async-trait","dep:axum", "dep:sqlx", "de
 unsafe_code = "forbid"
 
 [dev-dependencies]
-az-plugin-host = { git = "https://github.com/zjarlin/aio-platform.git", rev = "8112d1af5442eb334ae0355d18ddcc06ef94a8a9", default-features = false, features = ["test-support"] }
+az-plugin-host = { git = "https://github.com/zjarlin/aio-platform.git", rev = "d8476dee90cb9d36ac70896416bdefcef84cb32f", default-features = false, features = ["test-support"] }
 tempfile = "3.23.0"
-az-plugin-package = { git = "https://github.com/zjarlin/aio-platform.git", rev = "8112d1af5442eb334ae0355d18ddcc06ef94a8a9" }
+az-plugin-package = { git = "https://github.com/zjarlin/aio-platform.git", rev = "d8476dee90cb9d36ac70896416bdefcef84cb32f" }
 kuchikiki = { version = "=0.8.8-speedreader" }
 reqwest = { version = "0.12.23", default-features = false, features = ["json", "rustls-tls", "stream"] }
 tower-http = { version = "0.6.2", features = ["fs", "compression-gzip"] }
