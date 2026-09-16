@@ -866,7 +866,7 @@ dependencies = [
 [[package]]
 name = "az-tool"
 version = "0.1.0"
-source = "git+https://github.com/zjarlin/aio-platform.git?rev=d8476dee90cb9d36ac70896416bdefcef84cb32f#d8476dee90cb9d36ac70896416bdefcef84cb32f"
+source = "git+https://github.com/zjarlin/aio-platform.git?rev=d83cda2f6be3200c4fc8204c08427293b608a019#d83cda2f6be3200c4fc8204c08427293b608a019"
 dependencies = [
  "anyhow",
  "semver",
@@ -878,7 +878,7 @@ dependencies = [
 [[package]]
 name = "az-tool"
 version = "0.1.0"
-source = "git+https://github.com/zjarlin/aio-platform.git?rev=d83cda2f6be3200c4fc8204c08427293b608a019#d83cda2f6be3200c4fc8204c08427293b608a019"
+source = "git+https://github.com/zjarlin/aio-platform.git?rev=d8476dee90cb9d36ac70896416bdefcef84cb32f#d8476dee90cb9d36ac70896416bdefcef84cb32f"
 dependencies = [
  "anyhow",
  "semver",

@@ -6,7 +6,7 @@ const base=process.env.AIO_BASE_URL||'https://aio.addzero.site';
  const browser=await launchBrowser();const results=[];
  try{
   for(const mobile of [false,true]){
-   const context=await contextFor(browser,base,mobile);const page=await context.newPage();const errors=[];
+   const context=await contextFor(browser,base,mobile);const page=await context.newPage();if(!mobile){await page.setViewportSize({width:1440,height:900});}const errors=[];
    page.on('pageerror',e=>errors.push(e.message));
    await page.goto(base,{waitUntil:'domcontentloaded'});
    if(mobile){await page.getByRole('button',{name:'打开菜单',exact:true}).click();}
