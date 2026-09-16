@@ -76,3 +76,5 @@ Agent 使用原生 v2 整包中的 Linux ELF 与 Compose 前端，Pi SDK 依赖�
 首次部署执行 `ssh root@192.168.31.252 sh < deploy/252/worker-storage.sh`。脚本拒绝覆盖非空目标，核验绑定目录，备份并写入 fstab。服务使用 `RequiresMountsFor` 等待挂载。
 
 归档数据按工作区和用户隔离；worker_vaults 保存宿主 keyring 加密的 restic 密钥。备份必须同时覆盖归档目录、宿主数据库和 Component keyring；账户改密码不会改变归档密钥。
+
+macOS 应用控制需将 `desktop.open-app` 加入 `process.env` 的 `AIO_PROCESS_WORKER_CAPABILITIES`，再重启宿主。Agent 清单需声明同一能力，用户在“我的设备”显式启用。设备回报 `complete` 和进程 ID 后才算执行成功。
