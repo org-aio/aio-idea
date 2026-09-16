@@ -78,3 +78,5 @@ Agent 使用原生 v2 整包中的 Linux ELF 与 Compose 前端，Pi SDK 依赖�
 归档数据按工作区和用户隔离；worker_vaults 保存宿主 keyring 加密的 restic 密钥。备份必须同时覆盖归档目录、宿主数据库和 Component keyring；账户改密码不会改变归档密钥。
 
 macOS 应用控制需将 `desktop.open-app` 加入 `process.env` 的 `AIO_PROCESS_WORKER_CAPABILITIES`，再重启宿主。Agent 清单需声明同一能力，用户在“我的设备”显式启用。设备回报 `complete` 和进程 ID 后才算执行成功。
+
+进程能力清单扩展时，应同步更新 `/opt/aio-delivery/bin/aio-delivery`：交付服务也消费 `az-plugin-bundle` 清单协议。仅升级宿主会导致旧交付服务在打包阶段拒绝新字段。先运行 `cargo test -p az-delivery-worker`，再通过 `cargo zigbuild --release --target x86_64-unknown-linux-gnu.2.17 -p az-delivery-worker` 构建，保留旧二进制后原子替换并重启交付服务。
