@@ -22,6 +22,8 @@ curl --fail https://aio.addzero.site/health
 
 ## 原生 v2 Process
 
+2026-09-16 已接通 Git 推送后的 v2 自动构建、发布与既有租户升级，当前智能体版本和验证结果见[自动交付验收](native-delivery-acceptance.md)。
+
 2026-09-13 的真实 Agent 与 Memory 发布版本、浏览器验证、数据库演练及模型条件见 [正式接入验收](process-acceptance.md)。
 
 同日的宿主后台静态资源预热、v2 持久缓存和首屏耗时对比见 [缓存验收](asset-cache-acceptance.md)。刷新正式页面后自动启用，首次后台下载完成后可跨页面重载复用。
