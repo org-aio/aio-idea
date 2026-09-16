@@ -1,6 +1,6 @@
 # 工作区蜂群运行
 
-宿主升级至 `az-plugin-host 2026.9.19`，源码提交 `598f6bab5ee54bbf0b0003174962771b55450336`。Agent 清单必须声明 `workspace.execute`；部署环境 `process.env` 的 `AIO_PROCESS_WORKER_CAPABILITIES` 也必须包含此能力。设备不因此自动扩大目录授权。
+宿主升级至 `az-plugin-host 2026.9.19`，源码提交 `abe91afce5a783bf1f099595f0d18845895bacc7`。Agent 清单必须声明 `workspace.execute`；部署环境 `process.env` 的 `AIO_PROCESS_WORKER_CAPABILITIES` 也必须包含此能力。设备不因此自动扩大目录授权。
 
 本机以已配对账号注册逻辑工作区：
 
