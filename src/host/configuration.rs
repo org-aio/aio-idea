@@ -37,7 +37,7 @@ pub fn configuration() -> Result<HostConfig> {
             .ok()
             .filter(|s| !s.is_empty())
             .map(|_| DeliveryConfig {
-                owner: env::var("AIO_DELIVERY_OWNER").unwrap_or_else(|_| "zjarlin".into()),
+                owner: env::var("AIO_DELIVERY_OWNER").unwrap_or_else(|_| "org-aio".into()),
                 discovery_interval_seconds: 300,
                 revision_interval_seconds: 60,
             }),
