@@ -66,3 +66,13 @@ Agent 使用原生 v2 整包中的 Linux ELF 与 Compose 前端，Pi SDK 依赖�
 2026-09-12 的正式发布、整包摘要、测试结果及 Agent 运行边界见 [Component 交付验收](component-acceptance.md)。
 
 这条路径是受控发布器，不是公网 Git 安装器。公网运行时只安装已构建的 `wasm-component`、`page-definition` 与受限 `process` 产物，安装过程不会执行仓库脚本。CI 同时上传原始 Git commit 和所需 tree 对象；服务端离线校验对象哈希及清单、artifact 的提交归属，无需为发布回连远程 Git。健康检查和激活成功后才更新数据库市场条目。
+
+## 用户 worker 与归档
+
+账号菜单的“我的设备”提供浏览器配对、状态、任务和设备撤销。本机执行 `aio-space connect`，使用现有 AIO 账号确认一次后后台在线，不配置账号密码、SSH 或归档密码。
+
+252 将 `/home/data/aio-space/managed` 绑定挂载到 `/opt/aio-idea/worker-storage`，利用 `/home` 数据盘并保留 `ProtectHome=true`。宿主以 `aio-shell` 读写这个专用目录，配置 `AIO_WORKER_STORAGE_DIR` 指向绑定目标。挂载必须持久化且在启动宿主前完成；发布前检查目标文件系统确为 `/home` 所在分区。
+
+首次部署执行 `ssh root@192.168.31.252 sh < deploy/252/worker-storage.sh`。脚本拒绝覆盖非空目标，核验绑定目录，备份并写入 fstab。服务使用 `RequiresMountsFor` 等待挂载。
+
+归档数据按工作区和用户隔离；worker_vaults 保存宿主 keyring 加密的 restic 密钥。备份必须同时覆盖归档目录、宿主数据库和 Component keyring；账户改密码不会改变归档密钥。

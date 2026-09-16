@@ -2,6 +2,7 @@
 Description=AIO IDEA plugin application
 After=network-online.target aio-plugin-supervisor.service
 Wants=network-online.target aio-plugin-supervisor.service
+RequiresMountsFor=/opt/aio-idea/worker-storage
 
 [Service]
 Type=simple
@@ -16,6 +17,7 @@ Environment=AIO_WEB_DIST=/opt/aio-idea/current/web
 Environment=AIO_CONFIG=/opt/aio-idea/current/aio.toml
 Environment=AIO_PLUGIN_CACHE=/opt/aio-idea/plugin-cache
 Environment=AIO_FILE_STORAGE_DIR=/opt/aio-idea/file-storage
+Environment=AIO_WORKER_STORAGE_DIR=/opt/aio-idea/worker-storage
 Environment=AIO_PLUGIN_CACHE_MAX_BYTES=1073741824
 Environment=AIO_PLUGIN_CACHE_MAX_ENTRIES=100000
 Environment=AIO_PLUGIN_CACHE_MAX_REVISIONS=512
