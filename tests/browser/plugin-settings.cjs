@@ -14,11 +14,30 @@ async function main() {
   await context.addCookies([{ name: 'aio_session', value: cookie, url: base, httpOnly: true, secure: new URL(base).protocol === 'https:' }]);
   const page = await context.newPage();
   page.setDefaultTimeout(60000);
-  const errors = [], created = [], reports = [], tickets = new Set();
+  let phase = 'open';
+  const errors = [], pageErrors = [], failures = [], revokedMounts = [], inspections = [];
+  const created = [], reports = [], tickets = new Set(), removing = new Set();
   const redact = text => text.replace(/\/(components|frontend)\/(assets\/)?[^/]+\/(request|renew|index.html|settings.html)/g, '/$1/[token]/$3');
-  page.on('pageerror', error => errors.push(redact(error.message)));
-  page.on('console', message => { if (message.type() === 'error') errors.push(redact(message.text())); });
+  page.on('pageerror', error => pageErrors.push(redact(error.message)));
+  page.on('console', message => { if (message.type() === 'error') errors.push(phase + ': ' + redact(message.text())); });
   page.on('response', response => {
+    if (response.status() >= 400) {
+      const currentPhase = phase;
+      inspections.push((async () => {
+        const endpoint = new URL(response.url()).pathname.replace(/(\/api\/runtime\/(frontend|components)\/)(assets\/)?[^/]+\//, '$1[ticket]/');
+        const request = response.request().postDataJSON();
+        const result = await response.json().catch(() => ({}));
+        const source = request?.page_id?.split(':')[1];
+        const failure = { phase: currentPhase, status: response.status(), endpoint, page: request?.page_id, error: result.error };
+        // 卸载先停进程再移除目录，旧挂载必须被拒绝，不能把其他 400 当作成功。
+        if (endpoint === '/api/runtime/frontend/mount' && response.status() === 400
+            && removing.has(source) && ['process 未恢复', '当前租户未启用插件'].includes(result.error)) {
+          revokedMounts.push(failure);
+        } else {
+          failures.push(failure);
+        }
+      })());
+    }
     if (response.url().endsWith('/frontend/mount') && response.ok()) void response.json().then(value => tickets.add(value.data.token)).catch(() => {});
   });
   async function api(method, endpoint, data) {
@@ -55,12 +74,14 @@ async function main() {
     assert(entries.every(entry => entry && !entry.installed), '请使用两个验收插件均未安装的租户');
     await openSettings(false);
     assert.equal(await navigation().getByRole('button', { name: '智能体', exact: true }).count(), 0);
+    phase = 'install';
     for (const entry of entries) {
       await api('POST', '/api/runtime/plugins/install', { git: entry.git });
       created.push(entry);
     }
     await navigation().getByRole('button', { name: '智能体', exact: true }).waitFor();
     for (const [name, viewport, mobile] of [['desktop', { width: 1440, height: 960 }, false], ['mobile', { width: 390, height: 844 }, true]]) {
+      phase = name;
       await page.setViewportSize(viewport);
       if (mobile) await openSettings(true);
       await navigation().getByRole('button', { name: '智能体', exact: true }).click();
@@ -74,6 +95,7 @@ async function main() {
       assert.equal(await frame().getByLabel('名称', { exact: true }).count(), 0);
       await frame().getByRole('textbox', { name: '服务地址', exact: true }).fill('https://example.test/v1');
       await frame().getByLabel('API Key', { exact: true }).fill('synthetic-model-key');
+      await page.waitForTimeout(250);
       await page.screenshot({ path: path.join(output, name + '-provider.png') });
       await frame().getByRole('button', { name: '取消', exact: true }).click();
       if (!mobile) {
@@ -104,16 +126,24 @@ async function main() {
       reports.push({ viewport: name, inlineSettings: true, pluginSource: true, noName: true, manualUrl: true, overflow: false });
       console.log(name + ': inline settings and plugin source passed');
     }
+    assert.deepEqual(errors, []);
+    assert.deepEqual(pageErrors, []);
     while (created.length) {
       const entry = created.at(-1);
+      phase = 'uninstall ' + entry.title;
+      removing.add(entry.source_id);
       await api('POST', `/api/runtime/plugins/${entry.source_id}/uninstall`);
       created.pop();
     }
     await navigation().getByRole('button', { name: '智能体', exact: true }).waitFor({ state: 'detached' });
     assert.equal(await page.locator('iframe[title="智能体设置"]').count(), 0);
     await page.getByRole('heading', { name: '账户与工作区', exact: true }).waitFor();
-    assert.deepEqual(errors, []);
-    fs.writeFileSync(path.join(output, 'report.json'), JSON.stringify({ base, reports, dynamicInstallUninstall: true, keyPersistenceNoEchoClear: true, errors }, null, 2));
+    await Promise.all(inspections);
+    assert.deepEqual(pageErrors, []);
+    assert.deepEqual(failures, []);
+    assert(errors.every(error => /Failed to load resource: the server responded with a status of 400/.test(error)));
+    assert(errors.length <= revokedMounts.length, '每个卸载期网络错误都必须对应已移除插件的明确拒绝');
+    fs.writeFileSync(path.join(output, 'report.json'), JSON.stringify({ base, reports, dynamicInstallUninstall: true, keyPersistenceNoEchoClear: true, errors: pageErrors, activeConfigurationErrors: [], revokedMounts }, null, 2));
     console.log('Settings groups, dynamic installation, key persistence and cleanup passed');
   } catch (error) {
     await page.screenshot({ path: path.join(output, 'failure.png') }).catch(() => {});

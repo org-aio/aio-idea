@@ -72,7 +72,7 @@ AIO_TEST_SHELL=/path/to/aio-idea/target/dx/aio-idea/release/web/public AIO_TEST_
 
 ## 插件设置分组
 
-`plugin-settings.cjs` 在两个验收插件均未安装的专用租户中，验证设置中心的来源小字、内嵌插件设置、桌面/手机布局、分组切换卸载、安装/卸载后的动态入口，以及合成 Tavily Key 的保存、不回显和清除。不会启用搜索或调用第三方服务；结束时恢复安装状态。
+`plugin-settings.cjs` 在两个验收插件均未安装的专用租户中，验证设置中心的来源小字、内嵌插件设置、桌面/手机布局、分组切换卸载、安装/卸载后的动态入口，以及合成 Tavily Key 的保存、不回显和清除。不会启用搜索或调用第三方服务；结束时恢复安装状态。正常配置要求零浏览器错误；卸载时若旧挂载仍在途，必须核对移除来源 ID 和明确的停用错误，再单独记录为 `revokedMounts`，其他错误仍使测试失败。
 
 ```sh
 AIO_URL=https://aio.addzero.site AIO_COOKIE_FILE=/path/to/private-cookie.txt node tests/browser/plugin-settings.cjs
