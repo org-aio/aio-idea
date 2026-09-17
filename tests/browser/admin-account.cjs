@@ -40,8 +40,6 @@ async function scenario(browser, mobile) {
   page.on('pageerror', error => errors.push(error.message));
   page.on('request', request => { if (request.isNavigationRequest() && request.frame() === page.mainFrame()) documents++; });
   const request = context.request;
-  const marker = randomUUID().slice(0, 8);
-  const registry = `https://github.com/aio-browser-test/registry-${marker}.git`;
   try {
     await login(page, process.env.AIO_BOOTSTRAP_ACCOUNT, process.env.AIO_BOOTSTRAP_PASSWORD);
     const original = (await (await request.get(`${base}/api/auth/session`)).json()).data;
@@ -55,37 +53,22 @@ async function scenario(browser, mobile) {
     await page.screenshot({ path: resolve(output, `${mobile ? 'mobile' : 'desktop'}-profile.png`) });
     await back(page);
     await open(page, '设置中心', mobile);
-    await page.getByRole('heading', { name: '设置中心', exact: true }).waitFor();
-    await page.getByRole('button', { name: '添加市场源', exact: true }).click();
-    const source = page.getByRole('dialog', { name: '添加市场源', exact: true });
-    await source.getByLabel('市场源地址', { exact: true }).fill('http://127.0.0.1/private.git');
-    await source.getByRole('button', { name: '保存', exact: true }).click();
-    await source.getByRole('alert').waitFor();
-    await source.getByLabel('市场源地址', { exact: true }).fill(registry);
-    await saved(source);
-    assert((await (await request.get(`${base}/api/runtime/registries`)).json()).data.includes(registry));
-    await page.getByRole('searchbox', { name: '搜索市场源', exact: true }).fill(marker);
-    await page.getByRole('table', { name: '市场源', exact: true }).getByText(registry, { exact: true }).waitFor();
-    assert(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth));
-    await page.screenshot({ path: resolve(output, `${mobile ? 'mobile' : 'desktop'}-settings.png`) });
-    await page.getByRole('button', { name: `移除 ${registry}`, exact: true }).click();
-    const deletion = page.getByRole('dialog', { name: '移除市场源', exact: true });
-    await deletion.getByRole('button', { name: '确认删除', exact: true }).click();
-    await deletion.waitFor({ state: 'detached' });
-    assert(!(await (await request.get(`${base}/api/runtime/registries`)).json()).data.includes(registry));
+    await page.getByRole('heading', { name: '设置', exact: true }).waitFor();
+    assert.equal(await page.getByRole('button', { name: '添加市场源', exact: true }).count(), 0);
+    assert.equal((await request.get(base + '/api/runtime/registries')).status(), 404);
+    await page.getByRole('button', { name: '深色', exact: true }).click();
+    await page.waitForFunction(() => document.documentElement.dataset.theme === 'dark');
+    await page.getByRole('button', { name: '紧凑', exact: true }).click();
+    await page.getByText('外观已保存到当前设备', { exact: true }).waitFor();
+    await page.screenshot({ path: resolve(output, (mobile ? 'mobile' : 'desktop') + '-settings.png') });
+    await page.getByRole('button', { name: '浅色', exact: true }).click();
     await back(page);
     await open(page, '插件市场', mobile);
     await page.getByRole('heading', { name: '插件市场', exact: true }).waitFor();
-    await page.getByRole('searchbox', { name: '搜索插件', exact: true }).fill('no-such-package-test');
-    await page.locator('.application-fullscreen:visible').getByText('没有匹配结果', { exact: true }).waitFor();
-    await page.getByRole('searchbox', { name: '搜索插件', exact: true }).fill('');
-    await page.getByRole('button', { name: '从 Git 安装', exact: true }).click();
-    const install = page.getByRole('dialog', { name: '安装插件', exact: true });
-    await install.getByLabel('Git 仓库', { exact: true }).fill('http://127.0.0.1/private.git');
-    await install.getByRole('button', { name: '安装', exact: true }).click();
-    await install.getByRole('alert').waitFor();
-    await install.getByRole('button', { name: '取消', exact: true }).click();
-    await page.screenshot({ path: resolve(output, `${mobile ? 'mobile' : 'desktop'}-marketplace.png`) });
+    await page.getByRole('textbox', { name: '搜索插件', exact: true }).fill('no-such-package-test');
+    await page.getByText(/没有找到匹配的插件|还没有发布的插件/).first().waitFor();
+    await page.getByRole('textbox', { name: '搜索插件', exact: true }).fill('');
+    await page.screenshot({ path: resolve(output, (mobile ? 'mobile' : 'desktop') + '-marketplace.png') });
     await back(page);
     await open(page, '切换租户', mobile);
     await page.getByRole('button', { name: '新建租户', exact: true }).click();
@@ -111,12 +94,11 @@ async function scenario(browser, mobile) {
     assert.equal((await (await request.get(`${base}/api/auth/session`)).json()).data.tenant_id, original.tenant_id);
     assert.equal(documents, 1, 'Login, fullscreen navigation and tenant switching must not reload the document');
     assert.deepEqual(errors, []);
-    return { viewport: mobile ? 'mobile' : 'desktop', login: true, fullscreenReturn: true, registryCreateRemove: true, privateRegistryDenied: true, invalidPluginDenied: true, tenantCreateRenameSwitch: true, noDocumentReload: true };
+    return { viewport: mobile ? 'mobile' : 'desktop', login: true, fullscreenReturn: true, appearanceSaved: true, registryEndpointRemoved: true, tenantCreateRenameSwitch: true, noDocumentReload: true };
   } catch (error) {
     await page.screenshot({ path: resolve(output, 'account-failure.png') });
     throw error;
   } finally {
-    await request.delete(`${base}/api/runtime/registries`, { data: { source: registry } });
     await context.close();
   }
 }

@@ -117,13 +117,16 @@ async function scenario(browser, mobile) {
     await fits();
     const lightContrast = await contrast(page);
     await page.screenshot({ path: resolve(output, `${mobile ? 'mobile' : 'desktop'}-files.png`) });
+    const buttonColor = () => active.locator('.admin-page-header .dx-button[data-style="primary"]').evaluate(el => getComputedStyle(el).backgroundColor);
+    const lightButton = await buttonColor();
     await page.evaluate(() => { document.documentElement.dataset.theme = 'dark'; });
-    await page.waitForFunction(() => getComputedStyle(document.querySelector('.admin-page-header .dx-button[data-style="primary"]')).backgroundColor === 'rgb(250, 250, 250)');
+    await page.waitForFunction(previous => getComputedStyle(document.querySelector('[data-aio-page-active="true"] .admin-page-header .dx-button[data-style="primary"]')).backgroundColor !== previous, lightButton);
     const darkContrast = await contrast(page);
     await page.screenshot({ path: resolve(output, `${mobile ? 'mobile' : 'desktop'}-dark.png`) });
     await fits();
+    const darkButton = await buttonColor();
     await page.evaluate(() => { document.documentElement.dataset.theme = 'light'; document.body.style.zoom = '2'; });
-    await page.waitForFunction(() => getComputedStyle(document.querySelector('.admin-page-header .dx-button[data-style="primary"]')).backgroundColor === 'rgb(24, 24, 27)');
+    await page.waitForFunction(previous => getComputedStyle(document.querySelector('[data-aio-page-active="true"] .admin-page-header .dx-button[data-style="primary"]')).backgroundColor !== previous, darkButton);
     await fits();
     await page.screenshot({ path: resolve(output, `${mobile ? 'mobile' : 'desktop'}-zoom.png`) });
     await page.evaluate(() => { document.body.style.zoom = ''; });

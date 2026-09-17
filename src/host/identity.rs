@@ -25,7 +25,10 @@ impl ProductIdentity {
 #[async_trait::async_trait]
 impl IdentityProvider for ProductIdentity {
     async fn can_publish(&self, session: &SessionContext) -> Result<bool> {
-        Ok(publish_account_allowed(std::env::var("AIO_PLUGIN_PUBLISH_ACCOUNTS").ok().as_deref(), &session.account))
+        Ok(publish_account_allowed(
+            std::env::var("AIO_PLUGIN_PUBLISH_ACCOUNTS").ok().as_deref(),
+            &session.account,
+        ))
     }
     async fn member_active(&self, tenant: &str, user: &str) -> Result<bool> {
         Ok(sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM tenant_memberships m JOIN identity_users u ON u.id=m.user_id WHERE m.tenant_id=$1 AND m.user_id=$2)").bind(tenant).bind(user).fetch_one(&self.pool).await?)
@@ -54,7 +57,12 @@ impl IdentityProvider for ProductIdentity {
 }
 
 fn publish_account_allowed(configured: Option<&str>, account: &str) -> bool {
-    configured.is_some_and(|configured| configured.split(',').map(str::trim).any(|candidate| !candidate.is_empty() && candidate == account))
+    configured.is_some_and(|configured| {
+        configured
+            .split(',')
+            .map(str::trim)
+            .any(|candidate| !candidate.is_empty() && candidate == account)
+    })
 }
 
 #[cfg(test)]
@@ -64,6 +72,9 @@ mod tests {
     fn publishing_requires_an_explicit_product_account() {
         assert!(!publish_account_allowed(None, "zjarlin"));
         assert!(publish_account_allowed(Some("alice, zjarlin"), "zjarlin"));
-        assert!(!publish_account_allowed(Some("alice,zjarlin-admin"), "zjarlin"));
+        assert!(!publish_account_allowed(
+            Some("alice,zjarlin-admin"),
+            "zjarlin"
+        ));
     }
 }

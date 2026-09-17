@@ -82,12 +82,12 @@ async function run(browser,mobile,base) {
     if(!mobile){await tree.getByRole('treeitem').nth(1).focus();await page.keyboard.press('ArrowUp');await page.waitForFunction(()=>document.querySelector('[role=treeitem]')===document.activeElement);}
     await tree.getByRole('treeitem').last().click();
     await page.getByRole('button',{name:'安装',exact:true}).click();
-    await page.locator('.extension-browser__actions').getByText('已启用',{exact:true}).waitFor();
+    await page.locator('.extension-browser__actions').getByText('工作区：已启用',{exact:true}).waitFor();
     await page.getByLabel('管理插件',{exact:true}).click();
     await page.getByRole('menuitem',{name:'停用',exact:true}).click();
-    await page.locator('.extension-browser__actions').getByText('已停用',{exact:true}).waitFor();
-    await page.getByRole('menuitem',{name:'启用',exact:true}).click();
-    await page.locator('.extension-browser__actions').getByText('已启用',{exact:true}).waitFor();
+    await page.locator('.extension-browser__actions').getByText('工作区：已停用',{exact:true}).waitFor();
+    await page.getByRole('button',{name:'启用',exact:true}).click();
+    await page.locator('.extension-browser__actions').getByText('工作区：已启用',{exact:true}).waitFor();
     await page.getByRole('menuitem',{name:'卸载',exact:true}).click();
     await page.getByRole('dialog').waitFor();await page.getByRole('button',{name:'取消',exact:true}).click();
     revision='b'.repeat(64);entries=entries.map(e=>({...e,rev:revision}));
