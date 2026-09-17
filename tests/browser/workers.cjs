@@ -3,6 +3,7 @@ const fs = require('node:fs/promises');
 const path = require('node:path');
 const os = require('node:os');
 const {spawn, execFileSync} = require('node:child_process');
+const {randomUUID} = require('node:crypto');
 const {contextFor, launchBrowser, closeBrowser} = require('./live-session.cjs');
 
 const base = process.env.AIO_URL;
@@ -53,23 +54,22 @@ async function main() {
     await page.getByRole('button', {name:'授权这台设备',exact:true}).click();
     device = await until(async () => {try{return JSON.parse(await fs.readFile(path.join(config,'worker.json'),'utf8')).deviceId;}catch{return null;}},Boolean);
     const readTasks = async () => (await (await context.request.get(base+'/api/runtime/workers/tasks')).json()).data.filter(task => task.worker_id===device);
-    async function task(label, localPath, snapshot) {
+    async function task(capability, input) {
       const previous = new Set((await readTasks()).map(task=>task.id));
-      await page.getByRole('button', {name:label,exact:true}).last().click();
-      const form = page.getByRole('dialog').last();
-      if (localPath) await form.getByRole('textbox').first().fill(localPath);
-      if (snapshot) await form.getByLabel('快照 ID',{exact:true}).fill(snapshot);
-      await form.getByRole('button',{name:'提交任务',exact:true}).click();
+      const response = await context.request.post(base+'/api/runtime/workers/tasks', {
+        data:{id:randomUUID(),worker_id:device,capability,input},
+      });
+      assert.equal(response.status(),200);
       const finished = await until(readTasks, tasks => tasks.some(task=>!previous.has(task.id) && ['complete','failed','interrupted'].includes(task.state)),120000);
       const result = finished.find(task=>!previous.has(task.id));
       assert.equal(result.state,'complete',JSON.stringify(result));
       report.tasks.push({capability:result.capability,state:result.state});
       return result.result;
     }
-    await task('扫描占用', source);
-    const archive = await task('归档到 AIO', source);
+    await task('space.scan', {path:source});
+    const archive = await task('space.archive', {path:source});
     const restored = path.join(root,'restored');
-    await task('恢复归档', restored, archive.snapshotId);
+    await task('space.archive-restore', {path:restored,snapshot:archive.snapshotId});
     assert.equal(await fs.readFile(path.join(restored,source.slice(1),'acceptance.txt'),'utf8'),'AIO worker browser acceptance\n');
     if(background){
       assert.equal(worker.exitCode,0,stderr);

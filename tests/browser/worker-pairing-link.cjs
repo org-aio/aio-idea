@@ -15,7 +15,11 @@ async function main() {
   page.setDefaultTimeout(15000);
   const created = [];
   const errors = [];
+  const taskRequests = [];
   page.on('pageerror', error => errors.push(error.message));
+  page.on('request', request => {
+    if(new URL(request.url()).pathname==='/api/runtime/workers/tasks')taskRequests.push(request.method());
+  });
   async function createPairing() {
     const response = await context.request.post(base+'/api/runtime/workers/pairings', {
       data:{label:'配对链接回归 '+Date.now(),platform:'linux',capabilities:['space.scan']},
@@ -33,7 +37,10 @@ async function main() {
     assert.equal(new URL(page.url()).hash,'#pairing-test');
   }
   async function openDevices() {
-    await page.locator('button[aria-label$="的账户菜单"]').click();
+    const account = page.locator('button[aria-label$="的账户菜单"]:visible');
+    if(await account.count()===0)await page.getByRole('button',{name:'打开菜单',exact:true}).click();
+    await page.locator('button[aria-label$="的账户菜单"]:visible').click();
+    assert.equal(await page.getByRole('menuitem',{name:'个人配置',exact:true}).count(),0);
     await page.getByRole('menuitem',{name:'我的设备',exact:true}).click();
     await page.getByRole('heading',{name:'我的设备',exact:true}).waitFor();
   }
@@ -57,6 +64,18 @@ async function main() {
     await page.getByRole('button',{name:'关闭',exact:true}).click();
     await openDevices();
     assert.equal(await authorize().count(),0);
+    for (const viewport of [{width:1440,height:900},{width:390,height:844}]) {
+      await page.setViewportSize(viewport);
+      const dialog = page.getByRole('dialog').last();
+      assert.equal(await dialog.getByRole('button',{name:/扫描占用|预览清理|清理缓存|归档到 AIO|归档列表|恢复归档|应用控制/}).count(),0);
+      assert.equal(await dialog.getByRole('heading',{name:'最近任务',exact:true}).count(),0);
+      await dialog.getByRole('button',{name:'撤销配对',exact:true}).first().waitFor();
+      const bounds = await dialog.boundingBox();
+      assert(bounds.x>=0 && bounds.y>=0 && bounds.x+bounds.width<=viewport.width+1 && bounds.y+bounds.height<=viewport.height+1);
+      assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);
+      await page.screenshot({path:path.join(output,`${viewport.width}-pairing-only.png`)});
+    }
+    await page.setViewportSize({width:1440,height:900});
     await page.reload();
     await page.locator('button[aria-label$="的账户菜单"]').waitFor();
     assert.equal(await page.getByRole('heading',{name:'我的设备',exact:true}).count(),0);
@@ -101,8 +120,15 @@ async function main() {
     await authorize().click();
     await page.getByRole('status').filter({hasText:'不影响已配对设备'}).waitFor();
     await cleared();
+    const devices = (await (await context.request.get(base+'/api/runtime/workers')).json()).data;
+    const label = devices.find(device=>device.id===pending.device_id).label;
+    await page.getByRole('dialog').first().locator('section').filter({hasText:label}).getByRole('button',{name:'撤销配对',exact:true}).click();
+    await page.getByRole('heading',{name:'撤销设备配对',exact:true}).waitFor();
+    await page.getByRole('button',{name:'确认撤销',exact:true}).click();
+    await page.getByRole('dialog').first().locator('section').filter({hasText:label}).getByText(/revoked/).waitFor();
+    assert.deepEqual(taskRequests,[]);
     assert.deepEqual(errors,[]);
-    console.log(JSON.stringify({pendingReload:true,approvedRefresh:true,consumedLink:true,dismissedLink:true,transientFailurePreserved:true,unrelated400Preserved:true,concurrentApproval:true,viewports:[1440,390],pageErrors:errors}));
+    console.log(JSON.stringify({pairingOnly:true,personalConfigRemoved:true,taskRequests,revocation:true,pendingReload:true,approvedRefresh:true,consumedLink:true,dismissedLink:true,transientFailurePreserved:true,unrelated400Preserved:true,concurrentApproval:true,viewports:[1440,390],pageErrors:errors}));
   } finally {
     for (const pairing of created) {
       await context.request.post(`${base}/api/runtime/workers/pairings/${pairing.code}`);

@@ -69,7 +69,7 @@ Agent 使用原生 v2 整包中的 Linux ELF 与 Compose 前端，Pi SDK 依赖�
 
 ## 用户 worker 与归档
 
-账号菜单的“我的设备”提供浏览器配对、状态、任务和设备撤销。本机执行 `aio-space connect`，使用现有 AIO 账号确认一次后后台在线，不配置账号密码、SSH 或归档密码。
+账号菜单的“我的设备”仅提供设备列表、浏览器配对和撤销配对。旧“个人配置”面板、磁盘任务、归档操作及应用控制入口已退出宿主界面，由 Space 插件接管；现有同步、任务和归档接口及数据继续保留。本机执行 `aio-space connect`，使用现有 AIO 账号确认一次后后台在线，不配置账号密码、SSH 或归档密码。
 
 252 将 `/home/data/aio-space/managed` 绑定挂载到 `/opt/aio-idea/worker-storage`，利用 `/home` 数据盘并保留 `ProtectHome=true`。宿主以 `aio-shell` 读写这个专用目录，配置 `AIO_WORKER_STORAGE_DIR` 指向绑定目标。挂载必须持久化且在启动宿主前完成；发布前检查目标文件系统确为 `/home` 所在分区。
 
@@ -77,7 +77,7 @@ Agent 使用原生 v2 整包中的 Linux ELF 与 Compose 前端，Pi SDK 依赖�
 
 归档数据按工作区和用户隔离；worker_vaults 保存宿主 keyring 加密的 restic 密钥。备份必须同时覆盖归档目录、宿主数据库和 Component keyring；账户改密码不会改变归档密钥。
 
-macOS 应用控制需将 `desktop.open-app` 加入 `process.env` 的 `AIO_PROCESS_WORKER_CAPABILITIES`，再重启宿主。Agent 清单需声明同一能力，用户在“我的设备”显式启用。设备回报 `complete` 和进程 ID 后才算执行成功。
+macOS 应用控制需将 `desktop.open-app` 加入 `process.env` 的 `AIO_PROCESS_WORKER_CAPABILITIES`，再重启宿主。Agent 清单需声明同一能力，用户在 Space 客户端执行 `aio-space desktop-enable` 显式启用。设备回报 `complete` 和进程 ID 后才算执行成功。
 
 原生桌面观察、输入及 WPS 建表还需追加 `desktop.control`，保留原有能力。配套更新 Agent 整包和本机 `aio-space` 后，沿用已有配对执行 `aio-space desktop-enable` 和 `aio-space worker --background`。后台入口必须保留 npm 包依赖目录，不能只复制单个 CLI 文件。建表验收检查生成文件的单元格、摘要与 WPS 窗口回读；当前仅 macOS 完成此验收，Windows 尚未完成端到端适配。
 
