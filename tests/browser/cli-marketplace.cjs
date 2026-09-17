@@ -15,6 +15,10 @@ let installs = 0;
 let registered = null;
 let registrations = [];
 let documentation = null;
+let removed = false;
+let deviceFixtures = [];
+let deviceInstalls = [];
+let installTasks = [];
 const readBody = async req => { let body=''; for await (const chunk of req) body+=chunk; return JSON.parse(body); };
 const server = createServer(async(req,res)=>{
   const send=data=>res.writeHead(200,{'content-type':'application/json'}).end(JSON.stringify({data}));
@@ -23,7 +27,15 @@ const server = createServer(async(req,res)=>{
     if(path==='/api/auth/session') return send(session);
     if(path==='/api/runtime/bootstrap') return send({catalog,permissions:session.permissions});
     if(path==='/api/runtime/catalog') return send(catalog);
-    if(path==='/api/runtime/marketplace') return send([plugin,cli,...(registered?[registered]:[])]);
+    if(path==='/api/runtime/marketplace') return send([plugin,...(removed?[]:[{...cli,installed:deviceFixtures.some(d=>d.installed?.state==='installed')}]),...(registered?[registered]:[])]);
+    if(path==='/api/runtime/workers/tasks') return send(installTasks);
+    if(path.endsWith('/devices')) return send(deviceFixtures);
+    if(path.endsWith('/install') && path.startsWith('/api/runtime/tools/')) {
+      const body=await readBody(req);deviceInstalls.push(body);
+      installTasks=[{worker_id:body.worker_id,capability:'tools.install',state:'queued',input:{id:manifest.id},error:null}];
+      return send(installTasks[0]);
+    }
+    if(path===`/api/runtime/tools/${manifest.id}` && req.method==='DELETE') { removed=true;return send(null); }
     if(path==='/api/runtime/tools/access') return send(true);
     if(path==='/api/runtime/tools/register') {
       const body=await readBody(req);registrations.push(body);
@@ -50,10 +62,10 @@ const server = createServer(async(req,res)=>{
 (async()=>{
   await mkdir(output,{recursive:true});
   await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
-  const browser=await chromium.launch({headless:true});
+  const browser=await chromium.launch({channel:'chrome',headless:true});
   try {
     for(const mobile of [false,true]){
-      registered=null;documentation=null;registrations=[];
+      registered=null;documentation=null;registrations=[];removed=false;deviceFixtures=[];deviceInstalls=[];installTasks=[];
       const context=await browser.newContext({viewport:mobile?{width:390,height:844}:{width:1440,height:1000}});
       const page=await context.newPage();const errors=[];
       page.on('pageerror',error=>errors.push(error.message));
@@ -67,7 +79,7 @@ const server = createServer(async(req,res)=>{
       assert.equal(await tree.getByRole('treeitem').count(),1);
       await tree.getByRole('treeitem').click();
       await page.getByRole('heading',{name:manifest.title,exact:true}).waitFor();
-      const link=page.getByRole('link',{name:'安装到本机',exact:true});
+      const link=page.getByRole('link',{name:'通过本机助手安装',exact:true});
       assert.equal(await link.getAttribute('href'),'aio://install/codex-model-sync?version=0.1.4');
       // 拦截导航以验证点击目标，避免在浏览器测试中执行真实用户安装。
       await link.evaluate(element=>element.addEventListener('click',event=>{event.preventDefault();window.installLink=element.href;}));
@@ -80,6 +92,37 @@ const server = createServer(async(req,res)=>{
       assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
       await page.getByRole('heading',{name:manifest.title,exact:true}).scrollIntoViewIfNeeded();
       await page.screenshot({path:resolve(output,mobile?'mobile.png':'desktop.png'),fullPage:true,animations:"disabled"});
+      deviceFixtures=[
+        {id:'mac',label:'我的 Mac',platform:'darwin',status:'online',installed:{version:'0.1.4',state:'installed'},checked_at:Date.now(),fresh:true,can_install:true,supported:true,error:null},
+        {id:'linux',label:'另一台 Linux',platform:'linux',status:'online',installed:null,checked_at:Date.now(),fresh:true,can_install:true,supported:true,error:null},
+        {id:'offline',label:'离线电脑',platform:'linux',status:'offline',installed:null,checked_at:Date.now()-300000,fresh:false,can_install:false,supported:true,error:null},
+        {id:'old',label:'旧版助手',platform:'darwin',status:'online',installed:null,checked_at:null,fresh:false,can_install:false,supported:true,error:null},
+      ];
+      await page.getByRole('button',{name:'刷新设备状态',exact:true}).click();
+      await page.getByText('已安装 0.1.4',{exact:true}).waitFor();
+      assert.equal(await page.getByRole('link',{name:'通过本机助手安装',exact:true}).count(),0);
+      assert.equal(await page.getByRole('button',{name:'安装到此设备',exact:true}).count(),1);
+      await page.getByRole('button',{name:'安装到此设备',exact:true}).click();
+      await page.getByRole('dialog').getByText(/另一台 Linux/).waitFor();
+      assert.equal(deviceInstalls.length,0);
+      await page.getByRole('button',{name:'确认安装',exact:true}).click();
+      await page.getByText('正在等待设备完成安装…',{exact:true}).waitFor();
+      assert.deepEqual(deviceInstalls,[{worker_id:'linux',version:manifest.version}]);
+      installTasks[0].state='complete';deviceFixtures[1].installed={version:manifest.version,state:'installed'};
+      await page.getByRole('button',{name:'刷新设备状态',exact:true}).click();
+      await page.getByText('设备已完成安装任务',{exact:true}).waitFor();
+      assert.equal(await page.getByRole('button',{name:'安装到此设备',exact:true}).count(),0);
+      await page.getByRole('heading',{name:'设备安装状态',exact:true}).scrollIntoViewIfNeeded();
+      assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
+      await page.screenshot({path:resolve(output,mobile?'mobile-devices.png':'desktop-devices.png'),animations:'disabled'});
+      await page.getByRole('button',{name:'从市场删除',exact:true}).click();
+      await page.getByRole('dialog').waitFor();assert.equal(removed,false);
+      await page.getByRole('button',{name:'取消',exact:true}).click();assert.equal(removed,false);
+      await page.getByRole('button',{name:'从市场删除',exact:true}).click();
+      await page.getByRole('button',{name:'确认删除',exact:true}).click();
+      await page.getByRole('dialog').waitFor({state:'hidden'});
+      assert.equal(removed,true);
+      deviceFixtures=[];installTasks=[];
       if(mobile) await page.getByRole('button',{name:'插件列表',exact:true}).click();
       await page.getByRole('button',{name:'添加 CLI',exact:true}).click();
       await page.getByRole('dialog').waitFor();
@@ -119,6 +162,6 @@ const server = createServer(async(req,res)=>{
       assert.deepEqual(errors,[]);
       await context.close();
     }
-    console.log('CLI marketplace: desktop/mobile, command-only registration, optional Git README, metadata editing, automatic helper URI, no host execution passed');
+    console.log('CLI marketplace: desktop/mobile, installed detection, target-device confirmation, offline/old workers, removal/cancel, registration and helper URI passed');
   }finally{await browser.close();server.close();}
 })().catch(error=>{console.error(error);server.close();process.exitCode=1;});
