@@ -1,4 +1,6 @@
-plugins = []
+plugins = [
+  { git = "https://github.com/org-aio/aio-plugin-platform-links.git", rev = "8be1263cd6a5e366fbe8ff2bf5a1f95580ccaa0a" },
+]
 
 [application]
 name = "aio-idea"

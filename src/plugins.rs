@@ -3,6 +3,7 @@
 pub struct ClientCatalog {
     pub pages: Vec<az_dioxus_admin_shell::ApplicationPage>,
     pub account_items: Vec<az_dioxus_admin_shell::ApplicationAccountItem>,
+    pub topbar_items: Vec<az_dioxus_admin_shell::ApplicationTopbarItem>,
 }
 
 #[cfg(any(feature = "web", feature = "desktop"))]
@@ -19,11 +20,13 @@ pub fn client_catalog() -> anyhow::Result<ClientCatalog> {
     aio_plugin_settings::register(&mut builder);
     aio_plugin_account::register(&mut builder);
     aio_plugin_tenant_client::register(&mut builder);
+    aio_plugin_platform_links::register(&mut builder);
     builder.validate().context("校验页面插件依赖图失败")?;
     let catalog: Catalog = builder.build();
     Ok(ClientCatalog {
         pages: az_dioxus_admin_shell::collect_application_pages(&catalog)?,
         account_items: az_dioxus_admin_shell::collect_application_account_items(&catalog)?,
+        topbar_items: az_dioxus_admin_shell::collect_application_topbar_items(&catalog)?,
     })
 }
 
@@ -76,6 +79,11 @@ mod tests {
             .collect::<HashSet<_>>();
         let account_ids = catalog
             .account_items
+            .iter()
+            .map(|item| item.id.as_str())
+            .collect::<HashSet<_>>();
+        let topbar_ids = catalog
+            .topbar_items
             .iter()
             .map(|item| item.id.as_str())
             .collect::<HashSet<_>>();
@@ -134,6 +142,12 @@ mod tests {
             assert!(
                 account_ids.contains(account_id),
                 "缺少账户入口: {account_id}"
+            );
+        }
+        for topbar_id in ["platform-plugin-docs", "github-repositories"] {
+            assert!(
+                topbar_ids.contains(topbar_id),
+                "缺少顶栏资源入口: {topbar_id}"
             );
         }
         Ok(())

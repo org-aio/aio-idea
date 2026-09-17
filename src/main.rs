@@ -55,6 +55,7 @@ fn ProductWorkspace() -> dioxus::prelude::Element {
                 label: "AIO IDEA".into(),
                 pages: catalog.pages,
                 account_items: catalog.account_items,
+                topbar_items: catalog.topbar_items,
                 login: aio_plugin_identity_client::LoginPage,
                 account_action: account::account_action,
             }
