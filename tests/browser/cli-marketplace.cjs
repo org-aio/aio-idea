@@ -115,11 +115,11 @@ const server = createServer(async(req,res)=>{
       await page.getByRole('heading',{name:'设备安装状态',exact:true}).scrollIntoViewIfNeeded();
       assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
       await page.screenshot({path:resolve(output,mobile?'mobile-devices.png':'desktop-devices.png'),animations:'disabled'});
-      await page.getByRole('button',{name:'从市场删除',exact:true}).click();
+      await page.getByRole('button',{name:'从插件市场移除',exact:true}).click();
       await page.getByRole('dialog').waitFor();assert.equal(removed,false);
       await page.getByRole('button',{name:'取消',exact:true}).click();assert.equal(removed,false);
-      await page.getByRole('button',{name:'从市场删除',exact:true}).click();
-      await page.getByRole('button',{name:'确认删除',exact:true}).click();
+      await page.getByRole('button',{name:'从插件市场移除',exact:true}).click();
+      await page.getByRole('button',{name:'确认移除',exact:true}).click();
       await page.getByRole('dialog').waitFor({state:'hidden'});
       assert.equal(removed,true);
       deviceFixtures=[];installTasks=[];

@@ -254,7 +254,7 @@ dependencies = [
 [[package]]
 name = "aio-plugin-marketplace-client"
 version = "0.1.0"
-source = "git+https://github.com/zjarlin/aio-plugin-marketplace.git?rev=28f8a1fe0fb499be3517934c964620f50713da84#28f8a1fe0fb499be3517934c964620f50713da84"
+source = "git+https://github.com/zjarlin/aio-plugin-marketplace.git?rev=f50c8f6c4e983e4d490a99ba2469125f4da7c047#f50c8f6c4e983e4d490a99ba2469125f4da7c047"
 dependencies = [
  "az-dioxus-admin-shell",
  "az-tool 0.1.0 (git+https://github.com/zjarlin/aio-platform.git?rev=d83cda2f6be3200c4fc8204c08427293b608a019)",
@@ -270,7 +270,7 @@ dependencies = [
 [[package]]
 name = "aio-plugin-marketplace-server"
 version = "0.1.0"
-source = "git+https://github.com/zjarlin/aio-plugin-marketplace.git?rev=28f8a1fe0fb499be3517934c964620f50713da84#28f8a1fe0fb499be3517934c964620f50713da84"
+source = "git+https://github.com/zjarlin/aio-plugin-marketplace.git?rev=f50c8f6c4e983e4d490a99ba2469125f4da7c047#f50c8f6c4e983e4d490a99ba2469125f4da7c047"
 dependencies = [
  "anyhow",
  "axum",
