@@ -79,4 +79,6 @@ Agent 使用原生 v2 整包中的 Linux ELF 与 Compose 前端，Pi SDK 依赖�
 
 macOS 应用控制需将 `desktop.open-app` 加入 `process.env` 的 `AIO_PROCESS_WORKER_CAPABILITIES`，再重启宿主。Agent 清单需声明同一能力，用户在“我的设备”显式启用。设备回报 `complete` 和进程 ID 后才算执行成功。
 
+原生桌面观察、输入及 WPS 建表还需追加 `desktop.control`，保留原有能力。配套更新 Agent 整包和本机 `aio-space` 后，沿用已有配对执行 `aio-space desktop-enable` 和 `aio-space worker --background`。后台入口必须保留 npm 包依赖目录，不能只复制单个 CLI 文件。建表验收检查生成文件的单元格、摘要与 WPS 窗口回读；当前仅 macOS 完成此验收，Windows 尚未完成端到端适配。
+
 进程能力清单扩展时，应同步更新 `/opt/aio-delivery/bin/aio-delivery`：交付服务也消费 `az-plugin-bundle` 清单协议。仅升级宿主会导致旧交付服务在打包阶段拒绝新字段。先运行 `cargo test -p az-delivery-worker`，再通过 `cargo zigbuild --release --target x86_64-unknown-linux-gnu.2.17 -p az-delivery-worker` 构建，保留旧二进制后原子替换并重启交付服务。
