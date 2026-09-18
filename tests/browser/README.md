@@ -79,3 +79,7 @@ AIO_URL=https://aio.addzero.site AIO_COOKIE_FILE=/path/to/private-cookie.txt nod
 ```
 
 需要 Node 能解析 Playwright 和本机 Chrome。截图及报告保存在 `target/plugin-settings-test`。
+
+## 普通插件市场删除
+
+先使用 `dx serve --platform web` 生成当前 Web 产物，再运行 `node tests/browser/marketplace-removal.cjs`。可通过 `AIO_WEB_ROOT` 指定产物目录。测试使用隔离 HTTP 夹具，不删除生产插件，覆盖桌面/手机权限入口、二次确认与取消、服务端失败重试和删除后列表刷新；截图保存在 `target/marketplace-removal-test`。需要 Node 能解析 Playwright 和本机 Chrome。真实权限与持久化由宿主的 `marketplace_removal` PostgreSQL 测试覆盖。
