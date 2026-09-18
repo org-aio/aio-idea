@@ -85,7 +85,7 @@ dependencies = [
  "axum",
  "az-dioxus-admin-shell",
  "az-plugin-host",
- "az-plugin-package",
+ "az-plugin-package 2026.5.10 (git+https://github.com/zjarlin/aio-platform.git?rev=ab097c4903d41de8265625d88ac31c7627c5591e)",
  "az-ui-components",
  "dill",
  "dioxus",
@@ -724,11 +724,11 @@ dependencies = [
 [[package]]
 name = "az-plugin-bundle"
 version = "2026.5.10"
-source = "git+https://github.com/zjarlin/aio-platform.git?rev=ab097c4903d41de8265625d88ac31c7627c5591e#ab097c4903d41de8265625d88ac31c7627c5591e"
+source = "git+https://github.com/zjarlin/aio-platform.git?rev=eadd32fa7bf957e0a95c50be246dd2fd4fef0b59#eadd32fa7bf957e0a95c50be246dd2fd4fef0b59"
 dependencies = [
  "anyhow",
  "az-plugin-contract",
- "az-plugin-manifest",
+ "az-plugin-manifest 2026.5.10 (git+https://github.com/zjarlin/aio-platform.git?rev=eadd32fa7bf957e0a95c50be246dd2fd4fef0b59)",
  "base64",
  "flate2",
  "semver",
@@ -742,7 +742,7 @@ dependencies = [
 [[package]]
 name = "az-plugin-contract"
 version = "2026.5.10"
-source = "git+https://github.com/zjarlin/aio-platform.git?rev=ab097c4903d41de8265625d88ac31c7627c5591e#ab097c4903d41de8265625d88ac31c7627c5591e"
+source = "git+https://github.com/zjarlin/aio-platform.git?rev=eadd32fa7bf957e0a95c50be246dd2fd4fef0b59#eadd32fa7bf957e0a95c50be246dd2fd4fef0b59"
 dependencies = [
  "serde",
  "serde_json",
@@ -752,7 +752,7 @@ dependencies = [
 [[package]]
 name = "az-plugin-delivery"
 version = "2026.5.10"
-source = "git+https://github.com/zjarlin/aio-platform.git?rev=ab097c4903d41de8265625d88ac31c7627c5591e#ab097c4903d41de8265625d88ac31c7627c5591e"
+source = "git+https://github.com/zjarlin/aio-platform.git?rev=eadd32fa7bf957e0a95c50be246dd2fd4fef0b59#eadd32fa7bf957e0a95c50be246dd2fd4fef0b59"
 dependencies = [
  "anyhow",
  "serde",
@@ -762,10 +762,10 @@ dependencies = [
 [[package]]
 name = "az-plugin-development"
 version = "2026.9.22"
-source = "git+https://github.com/zjarlin/aio-platform.git?rev=ab097c4903d41de8265625d88ac31c7627c5591e#ab097c4903d41de8265625d88ac31c7627c5591e"
+source = "git+https://github.com/zjarlin/aio-platform.git?rev=eadd32fa7bf957e0a95c50be246dd2fd4fef0b59#eadd32fa7bf957e0a95c50be246dd2fd4fef0b59"
 dependencies = [
  "anyhow",
- "az-plugin-manifest",
+ "az-plugin-manifest 2026.5.10 (git+https://github.com/zjarlin/aio-platform.git?rev=eadd32fa7bf957e0a95c50be246dd2fd4fef0b59)",
  "semver",
  "serde",
  "serde_json",
@@ -777,7 +777,7 @@ dependencies = [
 [[package]]
 name = "az-plugin-host"
 version = "2026.9.22"
-source = "git+https://github.com/zjarlin/aio-platform.git?rev=ab097c4903d41de8265625d88ac31c7627c5591e#ab097c4903d41de8265625d88ac31c7627c5591e"
+source = "git+https://github.com/zjarlin/aio-platform.git?rev=eadd32fa7bf957e0a95c50be246dd2fd4fef0b59#eadd32fa7bf957e0a95c50be246dd2fd4fef0b59"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -787,10 +787,10 @@ dependencies = [
  "az-plugin-contract",
  "az-plugin-delivery",
  "az-plugin-development",
- "az-plugin-manifest",
- "az-plugin-package",
+ "az-plugin-manifest 2026.5.10 (git+https://github.com/zjarlin/aio-platform.git?rev=eadd32fa7bf957e0a95c50be246dd2fd4fef0b59)",
+ "az-plugin-package 2026.5.10 (git+https://github.com/zjarlin/aio-platform.git?rev=eadd32fa7bf957e0a95c50be246dd2fd4fef0b59)",
  "az-plugin-runtime",
- "az-tool 0.1.0 (git+https://github.com/zjarlin/aio-platform.git?rev=ab097c4903d41de8265625d88ac31c7627c5591e)",
+ "az-tool 0.1.0 (git+https://github.com/zjarlin/aio-platform.git?rev=eadd32fa7bf957e0a95c50be246dd2fd4fef0b59)",
  "az-ui-components",
  "base64",
  "dill",
@@ -834,12 +834,44 @@ dependencies = [
 ]
 
 [[package]]
+name = "az-plugin-manifest"
+version = "2026.5.10"
+source = "git+https://github.com/zjarlin/aio-platform.git?rev=eadd32fa7bf957e0a95c50be246dd2fd4fef0b59#eadd32fa7bf957e0a95c50be246dd2fd4fef0b59"
+dependencies = [
+ "anyhow",
+ "semver",
+ "serde",
+ "serde_json",
+ "toml 0.8.2",
+ "url",
+ "wasmtime",
+ "wit-component 0.244.0",
+ "wit-parser 0.244.0",
+]
+
+[[package]]
 name = "az-plugin-package"
 version = "2026.5.10"
 source = "git+https://github.com/zjarlin/aio-platform.git?rev=ab097c4903d41de8265625d88ac31c7627c5591e#ab097c4903d41de8265625d88ac31c7627c5591e"
 dependencies = [
  "anyhow",
- "az-plugin-manifest",
+ "az-plugin-manifest 2026.5.10 (git+https://github.com/zjarlin/aio-platform.git?rev=ab097c4903d41de8265625d88ac31c7627c5591e)",
+ "base64",
+ "flate2",
+ "semver",
+ "serde",
+ "serde_json",
+ "sha2",
+ "url",
+]
+
+[[package]]
+name = "az-plugin-package"
+version = "2026.5.10"
+source = "git+https://github.com/zjarlin/aio-platform.git?rev=eadd32fa7bf957e0a95c50be246dd2fd4fef0b59#eadd32fa7bf957e0a95c50be246dd2fd4fef0b59"
+dependencies = [
+ "anyhow",
+ "az-plugin-manifest 2026.5.10 (git+https://github.com/zjarlin/aio-platform.git?rev=eadd32fa7bf957e0a95c50be246dd2fd4fef0b59)",
  "base64",
  "flate2",
  "semver",
@@ -852,7 +884,7 @@ dependencies = [
 [[package]]
 name = "az-plugin-runtime"
 version = "2026.5.10"
-source = "git+https://github.com/zjarlin/aio-platform.git?rev=ab097c4903d41de8265625d88ac31c7627c5591e#ab097c4903d41de8265625d88ac31c7627c5591e"
+source = "git+https://github.com/zjarlin/aio-platform.git?rev=eadd32fa7bf957e0a95c50be246dd2fd4fef0b59#eadd32fa7bf957e0a95c50be246dd2fd4fef0b59"
 dependencies = [
  "aes-gcm",
  "anyhow",
@@ -876,7 +908,7 @@ dependencies = [
 [[package]]
 name = "az-tool"
 version = "0.1.0"
-source = "git+https://github.com/zjarlin/aio-platform.git?rev=ab097c4903d41de8265625d88ac31c7627c5591e#ab097c4903d41de8265625d88ac31c7627c5591e"
+source = "git+https://github.com/zjarlin/aio-platform.git?rev=d83cda2f6be3200c4fc8204c08427293b608a019#d83cda2f6be3200c4fc8204c08427293b608a019"
 dependencies = [
  "anyhow",
  "semver",
@@ -888,7 +920,7 @@ dependencies = [
 [[package]]
 name = "az-tool"
 version = "0.1.0"
-source = "git+https://github.com/zjarlin/aio-platform.git?rev=d83cda2f6be3200c4fc8204c08427293b608a019#d83cda2f6be3200c4fc8204c08427293b608a019"
+source = "git+https://github.com/zjarlin/aio-platform.git?rev=eadd32fa7bf957e0a95c50be246dd2fd4fef0b59#eadd32fa7bf957e0a95c50be246dd2fd4fef0b59"
 dependencies = [
  "anyhow",
  "semver",
