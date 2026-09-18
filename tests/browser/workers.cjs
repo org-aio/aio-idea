@@ -43,6 +43,7 @@ async function main() {
   try {
     const link = await until(async () => stderr.match(/https?:\/\/\S+worker_pair=[a-f0-9]+/)?.[0], Boolean);
     context = await contextFor(browser, base, false);
+    await context.grantPermissions(['clipboard-read','clipboard-write'], {origin: base});
     const page = await context.newPage();
     const errors = [];
     page.on('pageerror', error => errors.push(error.message));
@@ -50,6 +51,13 @@ async function main() {
     await page.setViewportSize({width:1440,height:900});
     await page.goto(link);
     await page.getByRole('button', {name:'授权这台设备',exact:true}).waitFor();
+    const commands = page.locator('section').filter({hasText:'配对新设备'});
+    await commands.getByText('npm install -g @zjarlin/aio-space',{exact:false}).first().waitFor();
+    assert.equal(await commands.getByText('brew install restic',{exact:false}).count(),1);
+    assert.equal(await commands.getByText('--no-browser --foreground',{exact:false}).count(),1);
+    await commands.getByRole('button',{name:'复制命令',exact:true}).first().click();
+    assert.match(await page.evaluate(()=>navigator.clipboard.readText()),/brew install restic/);
+    await commands.getByRole('button',{name:'已复制',exact:true}).waitFor();
     await page.screenshot({path:path.join(output,'desktop-pairing.png')});
     await page.getByRole('button', {name:'授权这台设备',exact:true}).click();
     device = await until(async () => {try{return JSON.parse(await fs.readFile(path.join(config,'worker.json'),'utf8')).deviceId;}catch{return null;}},Boolean);
