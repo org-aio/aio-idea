@@ -154,7 +154,7 @@ dependencies = [
 [[package]]
 name = "aio-plugin-file-client"
 version = "0.1.0"
-source = "git+https://github.com/zjarlin/aio-plugin-file.git?rev=d7d5056c382c230ecf460996d7ec284cae0f14ac#d7d5056c382c230ecf460996d7ec284cae0f14ac"
+source = "git+https://github.com/zjarlin/aio-plugin-file.git?rev=59eb5bdef110a4e0e7f807e982741b14cb3d891c#59eb5bdef110a4e0e7f807e982741b14cb3d891c"
 dependencies = [
  "aio-plugin-file-model",
  "az-dioxus-admin-shell",
@@ -172,7 +172,7 @@ dependencies = [
 [[package]]
 name = "aio-plugin-file-model"
 version = "0.1.0"
-source = "git+https://github.com/zjarlin/aio-plugin-file.git?rev=d7d5056c382c230ecf460996d7ec284cae0f14ac#d7d5056c382c230ecf460996d7ec284cae0f14ac"
+source = "git+https://github.com/zjarlin/aio-plugin-file.git?rev=59eb5bdef110a4e0e7f807e982741b14cb3d891c#59eb5bdef110a4e0e7f807e982741b14cb3d891c"
 dependencies = [
  "serde",
 ]
@@ -180,7 +180,7 @@ dependencies = [
 [[package]]
 name = "aio-plugin-file-server"
 version = "0.1.0"
-source = "git+https://github.com/zjarlin/aio-plugin-file.git?rev=d7d5056c382c230ecf460996d7ec284cae0f14ac#d7d5056c382c230ecf460996d7ec284cae0f14ac"
+source = "git+https://github.com/zjarlin/aio-plugin-file.git?rev=59eb5bdef110a4e0e7f807e982741b14cb3d891c#59eb5bdef110a4e0e7f807e982741b14cb3d891c"
 dependencies = [
  "aio-plugin-file-model",
  "aio-plugin-identity-server",
