@@ -1,5 +1,5 @@
 use anyhow::Result;
-use az_plugin_host::identity::{IdentityProvider, SessionContext};
+use az_plugin_host::identity::{IdentityProvider, MeterOutcome, SessionContext};
 use std::sync::Arc;
 
 pub struct ProductIdentity {
@@ -35,6 +35,28 @@ impl IdentityProvider for ProductIdentity {
     }
     async fn session_active(&self, session: &str, tenant: &str, user: &str) -> Result<bool> {
         Ok(sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM auth_sessions WHERE id=$1 AND tenant_id=$2 AND user_id=$3 AND expires_at>now())").bind(session).bind(tenant).bind(user).fetch_one(&self.pool).await?)
+    }
+    async fn meter(
+        &self,
+        tenant: &str,
+        user: &str,
+        source: &str,
+        resource: &str,
+        quantity: i64,
+        idempotency_key: &str,
+    ) -> Result<Option<MeterOutcome>> {
+        // 宿主与身份插件同库同进程，直接调用计费 Service，避免再走 HTTP 票据。
+        let outcome = self
+            .identity
+            .meter_resource(tenant, user, source, resource, quantity, idempotency_key)
+            .await?;
+        Ok(Some(MeterOutcome {
+            amount_micros: outcome.amount_micros,
+            grant_consumed: outcome.grant_consumed,
+            balance_charged_micros: outcome.balance_charged_micros,
+            balance_after_micros: outcome.balance_after_micros,
+            duplicate: outcome.duplicate,
+        }))
     }
     async fn authenticate(
         &self,
