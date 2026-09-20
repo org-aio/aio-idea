@@ -23,8 +23,8 @@ toml = { version = "0.9.5", optional = true }
 aio_plugin_account = { package = "aio-plugin-account", git = "https://github.com/zjarlin/aio-plugin-account.git", rev = "b6e6c561397e60fba1a1a9832ded783b19969506", optional = true }
 aio_plugin_dictionary_client = { package = "aio-plugin-dictionary-client", git = "https://github.com/zjarlin/aio-plugin-dictionary.git", rev = "35283ae2b1d78c6dd7ee23c5330106617d701f81", optional = true }
 aio_plugin_dictionary_server = { package = "aio-plugin-dictionary-server", git = "https://github.com/zjarlin/aio-plugin-dictionary.git", rev = "35283ae2b1d78c6dd7ee23c5330106617d701f81", optional = true }
-aio_plugin_file_client = { package = "aio-plugin-file-client", git = "https://github.com/zjarlin/aio-plugin-file.git", rev = "59eb5bdef110a4e0e7f807e982741b14cb3d891c", optional = true }
-aio_plugin_file_server = { package = "aio-plugin-file-server", git = "https://github.com/zjarlin/aio-plugin-file.git", rev = "59eb5bdef110a4e0e7f807e982741b14cb3d891c", optional = true }
+aio_plugin_file_client = { package = "aio-plugin-file-client", git = "https://github.com/zjarlin/aio-plugin-file.git", rev = "b8ac59ec7ce9106852e0fb4c460954a6da0bc373", optional = true }
+aio_plugin_file_server = { package = "aio-plugin-file-server", git = "https://github.com/zjarlin/aio-plugin-file.git", rev = "b8ac59ec7ce9106852e0fb4c460954a6da0bc373", optional = true }
 aio_plugin_marketplace_client = { package = "aio-plugin-marketplace-client", git = "https://github.com/zjarlin/aio-plugin-marketplace.git", rev = "79d1ee7bf386fd7cd55f53fd11751beb101bf03d", optional = true }
 aio_plugin_marketplace_server = { package = "aio-plugin-marketplace-server", git = "https://github.com/zjarlin/aio-plugin-marketplace.git", rev = "79d1ee7bf386fd7cd55f53fd11751beb101bf03d", optional = true }
 aio_plugin_settings = { package = "aio-plugin-settings", git = "https://github.com/zjarlin/aio-plugin-settings.git", rev = "9ab0d90891517769fe3bd0b14a5553724cfd744e", optional = true }
