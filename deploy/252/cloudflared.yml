@@ -1,7 +1,9 @@
 tunnel: 4be41351-a4ef-4ce2-9ef2-f573946fcfcf
 credentials-file: /opt/aio-idea/cloudflared/credentials.json
 protocol: quic
-metrics: 127.0.0.1:20243
+# 宿主机上多个 Cloudflare Tunnel 共用 host 网络，metrics 端口必须各自唯一。
+# 20243 已被其他 tunnel 容器占用，改用 20253 避免重启后隧道因端口冲突崩溃。
+metrics: 127.0.0.1:20253
 
 ingress:
   - hostname: aio.addzero.site
