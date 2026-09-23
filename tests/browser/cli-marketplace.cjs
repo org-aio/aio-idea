@@ -27,7 +27,7 @@ const server = createServer(async(req,res)=>{
     if(path==='/api/auth/session') return send(session);
     if(path==='/api/runtime/bootstrap') return send({catalog,permissions:session.permissions});
     if(path==='/api/runtime/catalog') return send(catalog);
-    if(path==='/api/runtime/marketplace') return send([plugin,...(removed?[]:[{...cli,installed:deviceFixtures.some(d=>d.installed?.state==='installed')}]),...(registered?[registered]:[])]);
+    if(path==='/api/runtime/marketplace') return send([plugin,...(removed?[]:[cli]),...(registered?[registered]:[])]);
     if(path==='/api/runtime/workers/tasks') return send(installTasks);
     if(path.endsWith('/devices')) return send(deviceFixtures);
     if(path.endsWith('/install') && path.startsWith('/api/runtime/tools/')) {
