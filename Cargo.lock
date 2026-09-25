@@ -280,7 +280,7 @@ dependencies = [
 [[package]]
 name = "aio-plugin-rbac-client"
 version = "0.1.0"
-source = "git+https://github.com/zjarlin/aio-plugin-rbac.git?rev=c5beb1d1a33f76aa40c3ab5b8f9e889a10f013b5#c5beb1d1a33f76aa40c3ab5b8f9e889a10f013b5"
+source = "git+https://github.com/zjarlin/aio-plugin-rbac.git?rev=50d3b3c2ee4612edba57302d4015446511f4b6de#50d3b3c2ee4612edba57302d4015446511f4b6de"
 dependencies = [
  "aio-plugin-rbac-model",
  "az-dioxus-admin-shell",
@@ -296,7 +296,7 @@ dependencies = [
 [[package]]
 name = "aio-plugin-rbac-model"
 version = "0.1.0"
-source = "git+https://github.com/zjarlin/aio-plugin-rbac.git?rev=c5beb1d1a33f76aa40c3ab5b8f9e889a10f013b5#c5beb1d1a33f76aa40c3ab5b8f9e889a10f013b5"
+source = "git+https://github.com/zjarlin/aio-plugin-rbac.git?rev=50d3b3c2ee4612edba57302d4015446511f4b6de#50d3b3c2ee4612edba57302d4015446511f4b6de"
 dependencies = [
  "serde",
 ]
@@ -304,7 +304,7 @@ dependencies = [
 [[package]]
 name = "aio-plugin-rbac-server"
 version = "0.1.0"
-source = "git+https://github.com/zjarlin/aio-plugin-rbac.git?rev=c5beb1d1a33f76aa40c3ab5b8f9e889a10f013b5#c5beb1d1a33f76aa40c3ab5b8f9e889a10f013b5"
+source = "git+https://github.com/zjarlin/aio-plugin-rbac.git?rev=50d3b3c2ee4612edba57302d4015446511f4b6de#50d3b3c2ee4612edba57302d4015446511f4b6de"
 dependencies = [
  "aio-plugin-identity-server",
  "aio-plugin-rbac-model",
@@ -312,6 +312,7 @@ dependencies = [
  "axum",
  "dill",
  "sqlx",
+ "uuid",
 ]
 
 [[package]]

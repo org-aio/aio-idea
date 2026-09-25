@@ -30,8 +30,8 @@ aio_plugin_marketplace_server = { package = "aio-plugin-marketplace-server", git
 aio_plugin_settings = { package = "aio-plugin-settings", git = "https://github.com/zjarlin/aio-plugin-settings.git", rev = "3aeb5f7c62a979a0843a8ab7c9c255ec4246c695", optional = true }
 aio_plugin_identity_client = { package = "aio-plugin-identity-client", git = "https://github.com/zjarlin/aio-plugin-identity.git", rev = "02cd1de9a3430e6428e7af1267501710fcba026b", optional = true }
 aio_plugin_identity_server = { package = "aio-plugin-identity-server", git = "https://github.com/zjarlin/aio-plugin-identity.git", rev = "02cd1de9a3430e6428e7af1267501710fcba026b", optional = true }
-aio_plugin_rbac_client = { package = "aio-plugin-rbac-client", git = "https://github.com/zjarlin/aio-plugin-rbac.git", rev = "c5beb1d1a33f76aa40c3ab5b8f9e889a10f013b5", optional = true }
-aio_plugin_rbac_server = { package = "aio-plugin-rbac-server", git = "https://github.com/zjarlin/aio-plugin-rbac.git", rev = "c5beb1d1a33f76aa40c3ab5b8f9e889a10f013b5", optional = true }
+aio_plugin_rbac_client = { package = "aio-plugin-rbac-client", git = "https://github.com/zjarlin/aio-plugin-rbac.git", rev = "50d3b3c2ee4612edba57302d4015446511f4b6de", optional = true }
+aio_plugin_rbac_server = { package = "aio-plugin-rbac-server", git = "https://github.com/zjarlin/aio-plugin-rbac.git", rev = "50d3b3c2ee4612edba57302d4015446511f4b6de", optional = true }
 aio_plugin_tenant_client = { package = "aio-plugin-tenant-client", git = "https://github.com/zjarlin/aio-plugin-tenant.git", rev = "12c27a2a97714ecd5d979695a488340ed6692d34", optional = true }
 aio_plugin_tenant_server = { package = "aio-plugin-tenant-server", git = "https://github.com/zjarlin/aio-plugin-tenant.git", rev = "12c27a2a97714ecd5d979695a488340ed6692d34", optional = true }
 
