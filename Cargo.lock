@@ -335,7 +335,7 @@ dependencies = [
 [[package]]
 name = "aio-plugin-space-client"
 version = "0.1.0"
-source = "git+https://github.com/org-aio/aio-plugin-space.git?rev=e8f30afde8105021afbe2612bead6e2d660373c9#e8f30afde8105021afbe2612bead6e2d660373c9"
+source = "git+https://github.com/org-aio/aio-plugin-space.git?rev=4ec4246fa5845c8bdc355c2ee5273740a0e6b61c#4ec4246fa5845c8bdc355c2ee5273740a0e6b61c"
 dependencies = [
  "az-dioxus-admin-shell",
  "dill",

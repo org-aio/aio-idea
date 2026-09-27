@@ -9,14 +9,14 @@ const base = process.env.AIO_URL;
 const cli = process.env.AIO_SPACE_TEST_CLI;
 assert(base && cli && process.env.AIO_COOKIE_FILE);
 const output = path.resolve('target/worker-device-identity');
-async function until(read, accept, timeout = 60000) {
+async function until(read, accept, description, timeout = 60000) {
   const deadline = Date.now() + timeout;
   while (Date.now() < deadline) {
     const value = await read();
     if (accept(value)) return value;
     await new Promise(resolve => setTimeout(resolve, 250));
   }
-  throw new Error('Device acceptance timed out');
+  throw new Error('Device acceptance timed out: ' + description);
 }
 async function stop(worker) {
   if (worker.exitCode !== null || worker.signalCode !== null) return;
@@ -48,15 +48,34 @@ async function main() {
     });
     workers.push(worker);
     worker.stderr.on('data', bytes => {stderr += bytes;});
-    const link = await until(() => stderr.match(/https?:\/\/\S+worker_pair=[a-f0-9]+/)?.[0], Boolean);
+    const checkWorker = () => {
+      if (worker.exitCode !== null || worker.signalCode !== null) {
+        throw new Error('Pairing CLI exited: ' + stderr.replace(/worker_pair=[a-f0-9]+/g, 'worker_pair=[redacted]'));
+      }
+    };
+    console.log('Pairing profile: ' + path.basename(config));
+    const link = await until(() => {
+      checkWorker();
+      return stderr.match(/https?:\/\/\S+worker_pair=[a-f0-9]+/)?.[0];
+    }, Boolean, 'pairing URL');
+    const code = new URL(link).searchParams.get('worker_pair');
+    const preview = await context.request.get(base + '/api/runtime/workers/pairings/' + code);
+    assert.equal(preview.status(), 200);
+    const expectedId = (await preview.json()).data.id;
+    assert(expectedId);
+    devices.add(expectedId);
     await page.goto(link);
     await page.getByRole('button', {name:'授权这台设备', exact:true}).click();
     const id = await until(async () => {
+      checkWorker();
       try {return JSON.parse(await fs.readFile(path.join(config, 'worker.json'), 'utf8')).deviceId;}
       catch {return null;}
-    }, Boolean);
-    devices.add(id);
-    await until(list, items => items.some(item => item.id === id && item.status === 'online'));
+    }, value => value === expectedId, 'saved device credentials');
+    await until(async () => {
+      checkWorker();
+      return list();
+    }, items => items.some(item => item.id === id && item.status === 'online'), 'device heartbeat');
+    console.log('Device online: ' + id);
     report.pairings.push(id);
     return {id, worker};
   }
@@ -91,13 +110,16 @@ async function main() {
     assert((await list()).some(item => item.id === second.id));
     await row.getByRole('button', {name:'删除设备', exact:true}).click();
     await page.getByRole('button', {name:'确认删除', exact:true}).click();
-    await until(list, items => !items.some(item => item.id === second.id));
+    await until(list, items => !items.some(item => item.id === second.id), 'deleted device removed');
     await row.waitFor({state:'detached'});
     report.deleted = second.id;
     report.errors = errors;
     assert.deepEqual(errors, []);
     await fs.writeFile(path.join(output, 'report.json'), JSON.stringify(report, null, 2));
     console.log(JSON.stringify(report));
+  } catch (error) {
+    await page.screenshot({path:path.join(output, 'failure.png')}).catch(() => {});
+    throw error;
   } finally {
     await Promise.all(workers.map(stop));
     for (const id of devices) await context.request.delete(base + '/api/runtime/workers/' + id);
