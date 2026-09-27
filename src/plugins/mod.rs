@@ -1,4 +1,4 @@
-// 此文件由 aio plugin sync 生成。
+// 产品拥有的静态插件装配；通用 CLI 模板不包含这里的系统插件和账户目录。
 #[cfg(any(feature = "web", feature = "desktop"))]
 pub struct ClientCatalog {
     pub pages: Vec<az_dioxus_admin_shell::ApplicationPage>,
@@ -21,6 +21,7 @@ pub fn client_catalog() -> anyhow::Result<ClientCatalog> {
     aio_plugin_account::register(&mut builder);
     aio_plugin_tenant_client::register(&mut builder);
     aio_plugin_platform_links::register(&mut builder);
+    aio_plugin_space_client::register(&mut builder);
     builder.validate().context("校验页面插件依赖图失败")?;
     let catalog: Catalog = builder.build();
     Ok(ClientCatalog {
@@ -97,6 +98,7 @@ mod tests {
             "settings",
             "marketplace",
             "tenants",
+            "space-files",
         ] {
             assert!(page_ids.contains(page_id), "缺少系统页面: {page_id}");
         }
@@ -116,6 +118,22 @@ mod tests {
                 .collect::<Vec<_>>(),
             ["system-management"]
         );
+
+        let space = catalog
+            .pages
+            .iter()
+            .find(|page| page.id == "space-files")
+            .ok_or_else(|| anyhow::anyhow!("缺少云端文件页面"))?;
+        assert_eq!(space.scene.id, "workspace");
+        assert_eq!(
+            space
+                .menu_path
+                .iter()
+                .map(|group| group.id.as_str())
+                .collect::<Vec<_>>(),
+            ["space"]
+        );
+        assert_eq!(space.required_permission, None);
 
         let files = catalog
             .pages

@@ -78,6 +78,7 @@ dependencies = [
  "aio-plugin-rbac-client",
  "aio-plugin-rbac-server",
  "aio-plugin-settings",
+ "aio-plugin-space-client",
  "aio-plugin-tenant-client",
  "aio-plugin-tenant-server",
  "anyhow",
@@ -328,6 +329,17 @@ dependencies = [
  "dioxus-icons",
  "gloo-net",
  "serde",
+ "serde_json",
+]
+
+[[package]]
+name = "aio-plugin-space-client"
+version = "0.1.0"
+source = "git+https://github.com/org-aio/aio-plugin-space.git?rev=0672b552cf5d52d135f5361528fb608d0d1744c3#0672b552cf5d52d135f5361528fb608d0d1744c3"
+dependencies = [
+ "az-dioxus-admin-shell",
+ "dill",
+ "dioxus",
  "serde_json",
 ]
 

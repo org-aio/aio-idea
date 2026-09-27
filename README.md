@@ -67,9 +67,9 @@ git submodule update --init --recursive
 dx serve
 cargo run --no-default-features --features desktop
 cargo run --no-default-features --features server
-aio plugin install <git>
-aio plugin sync
 ```
+
+本产品的静态插件装配由 `src/plugins/mod.rs` 维护，包含系统插件、账户入口和产品测试；通用 `aio plugin sync` 模板不能覆盖它。增加静态插件时同步 Cargo 依赖及 features、`aio.toml`、`.aio/plugins.lock` 和此装配入口，再验证既有目录与新增页面。空间管家的「云端文件」位于工作空间，使用当前账号查看同步版本及设备报告。
 
 `lib/dioxus-admin-workbench` 以 Git 子模块锁定完整版本，Cargo patch 将产品和静态扩展的基础 UI crates 统一到该版本，避免同名不同源码依赖造成 Rust 类型不一致。它是基础库，不是运行时业务插件；CI、容器构建前必须初始化子模块。
 
