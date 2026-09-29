@@ -69,7 +69,7 @@ async function main() {
       const dialog = page.getByRole('dialog').last();
       assert.equal(await dialog.getByRole('button',{name:/扫描占用|预览清理|清理缓存|归档到 AIO|归档列表|恢复归档|应用控制/}).count(),0);
       assert.equal(await dialog.getByRole('heading',{name:'最近任务',exact:true}).count(),0);
-      await dialog.getByRole('button',{name:'撤销配对',exact:true}).first().waitFor();
+      await dialog.getByRole('button',{name:'删除设备',exact:true}).first().waitFor();
       const bounds = await dialog.boundingBox();
       assert(bounds.x>=0 && bounds.y>=0 && bounds.x+bounds.width<=viewport.width+1 && bounds.y+bounds.height<=viewport.height+1);
       assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);
@@ -122,10 +122,11 @@ async function main() {
     await cleared();
     const devices = (await (await context.request.get(base+'/api/runtime/workers')).json()).data;
     const label = devices.find(device=>device.id===pending.device_id).label;
-    await page.getByRole('dialog').first().locator('section').filter({hasText:label}).getByRole('button',{name:'撤销配对',exact:true}).click();
-    await page.getByRole('heading',{name:'撤销设备配对',exact:true}).waitFor();
-    await page.getByRole('button',{name:'确认撤销',exact:true}).click();
-    await page.getByRole('dialog').first().locator('section').filter({hasText:label}).getByText(/revoked/).waitFor();
+    const row = page.getByRole('dialog').first().locator('section').filter({hasText:label});
+    await row.getByRole('button',{name:'删除设备',exact:true}).click();
+    await page.getByRole('heading',{name:'删除设备',exact:true}).waitFor();
+    await page.getByRole('button',{name:'确认删除',exact:true}).click();
+    await row.waitFor({state:'detached'});
     assert.deepEqual(taskRequests,[]);
     assert.deepEqual(errors,[]);
     console.log(JSON.stringify({pairingOnly:true,personalConfigRemoved:true,taskRequests,revocation:true,pendingReload:true,approvedRefresh:true,consumedLink:true,dismissedLink:true,transientFailurePreserved:true,unrelated400Preserved:true,concurrentApproval:true,viewports:[1440,390],pageErrors:errors}));

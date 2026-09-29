@@ -1,9 +1,19 @@
 [[plugins]]
 git = "https://github.com/org-aio/aio-plugin-platform-links.git"
 revision = "8be1263cd6a5e366fbe8ff2bf5a1f95580ccaa0a"
-directory = "aio-plugin-platform-links-62edcd90"
+directory = "aio-plugin-platform-links-4c098393"
 
 [plugins.client]
 package = "aio-plugin-platform-links"
 dependency = "aio_plugin_platform_links"
 package_path = "."
+
+[[plugins]]
+git = "https://github.com/org-aio/aio-plugin-space.git"
+revision = "0672b552cf5d52d135f5361528fb608d0d1744c3"
+directory = "aio-plugin-space-1799193a"
+
+[plugins.client]
+package = "aio-plugin-space-client"
+dependency = "aio_plugin_space_client"
+package_path = "web-client"
