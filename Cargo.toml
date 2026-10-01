@@ -5,7 +5,7 @@ edition = "2024"
 license = "MIT OR Apache-2.0"
 
 [dependencies]
-az-plugin-host = { git = "https://github.com/org-aio/aio-platform.git", rev = "0e8e24b52bdbfe231e2d3e205b7a689a492d8111", default-features = false }
+az-plugin-host = { git = "https://github.com/org-aio/aio-platform.git", rev = "9f64364edaef702d596dd3051be4a27993c881bd", default-features = false }
 anyhow = "1.0.99"
 async-trait = { version = "0.1", optional = true }
 axum = { version = "0.8.6", optional = true }
@@ -34,7 +34,7 @@ aio_plugin_rbac_server = { package = "aio-plugin-rbac-server", git = "https://gi
 aio_plugin_tenant_client = { package = "aio-plugin-tenant-client", git = "https://github.com/zjarlin/aio-plugin-tenant.git", rev = "12c27a2a97714ecd5d979695a488340ed6692d34", optional = true }
 aio_plugin_tenant_server = { package = "aio-plugin-tenant-server", git = "https://github.com/zjarlin/aio-plugin-tenant.git", rev = "12c27a2a97714ecd5d979695a488340ed6692d34", optional = true }
 aio_plugin_platform_links = { package = "aio-plugin-platform-links", git = "https://github.com/org-aio/aio-plugin-platform-links.git", rev = "8be1263cd6a5e366fbe8ff2bf5a1f95580ccaa0a", optional = true }
-aio_plugin_space_client = { package = "aio-plugin-space-client", git = "https://github.com/org-aio/aio-plugin-space.git", rev = "4ec4246fa5845c8bdc355c2ee5273740a0e6b61c", optional = true }
+aio_plugin_space_client = { package = "aio-plugin-space-client", git = "https://github.com/org-aio/aio-plugin-space.git", rev = "0becb4e2cb2ff075a0a02bd6af6edbb3049da3d7", optional = true }
 
 
 [features]
@@ -49,9 +49,9 @@ server = ["az-plugin-host/server", "dep:async-trait","dep:axum", "dep:sqlx", "de
 unsafe_code = "forbid"
 
 [dev-dependencies]
-az-plugin-host = { git = "https://github.com/org-aio/aio-platform.git", rev = "0e8e24b52bdbfe231e2d3e205b7a689a492d8111", default-features = false, features = ["test-support"] }
+az-plugin-host = { git = "https://github.com/org-aio/aio-platform.git", rev = "9f64364edaef702d596dd3051be4a27993c881bd", default-features = false, features = ["test-support"] }
 tempfile = "3.23.0"
-az-plugin-package = { git = "https://github.com/org-aio/aio-platform.git", rev = "0e8e24b52bdbfe231e2d3e205b7a689a492d8111" }
+az-plugin-package = { git = "https://github.com/org-aio/aio-platform.git", rev = "9f64364edaef702d596dd3051be4a27993c881bd" }
 kuchikiki = { version = "=0.8.8-speedreader" }
 reqwest = { version = "0.12.23", default-features = false, features = ["json", "rustls-tls", "stream"] }
 tower-http = { version = "0.6.2", features = ["fs", "compression-gzip"] }

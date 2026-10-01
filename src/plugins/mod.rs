@@ -99,6 +99,7 @@ mod tests {
             "marketplace",
             "tenants",
             "space-files",
+            "space-terminal",
         ] {
             assert!(page_ids.contains(page_id), "缺少系统页面: {page_id}");
         }
