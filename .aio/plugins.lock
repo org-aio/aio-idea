@@ -10,7 +10,7 @@ package_path = "."
 
 [[plugins]]
 git = "https://github.com/org-aio/aio-plugin-space.git"
-revision = "0becb4e2cb2ff075a0a02bd6af6edbb3049da3d7"
+revision = "287b0eea08274981b904287427fe7e0d26365a57"
 directory = "aio-plugin-space-1799193a"
 
 [plugins.client]
