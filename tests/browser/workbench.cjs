@@ -4,9 +4,10 @@ const { readFile, mkdir, writeFile } = require('node:fs/promises');
 const { resolve, extname } = require('node:path');
 const { chromium } = require('playwright');
 
-const root = resolve('target/dx/aio-idea/release/web/public');
+const root = resolve(process.env.AIO_WEB_DIST || 'target/dx/aio-idea/release/web/public');
 const output = resolve('target/workbench-test');
 let account = 'alice', loggedIn = true, mode = 'normal', marketCalls = 0;
+let loginPayloads = [];
 const forbidden = [];
 const revision = 'a'.repeat(64);
 const plugin = (title, installed, number) => ({
@@ -44,7 +45,13 @@ const server = createServer(async (req, res) => {
     if (path === '/api/runtime/bootstrap') return loggedIn ? send({catalog: catalog(), permissions: session().permissions}) : send(null);
     if (path === '/api/runtime/catalog') return send(catalog());
     if (path === '/api/auth/logout') { loggedIn = false; return send(null); }
-    if (path === '/api/auth/login') { loggedIn = true; return send(session()); }
+    if (path === '/api/auth/login') {
+      let body = '';
+      for await (const chunk of req) body += chunk;
+      loginPayloads.push(JSON.parse(body));
+      loggedIn = true;
+      return send(session());
+    }
     if (path === '/api/runtime/marketplace') {
       marketCalls++;
       if (mode === 'denied') return send(null, 403);
@@ -186,17 +193,67 @@ async function states(browser, base) {
   await context.close();
   return {login: true, loading: true, empty: true, failureRetry: true, denied: true};
 }
+async function passwordVisibility(browser, base, width) {
+  reset();
+  loggedIn = false;
+  loginPayloads = [];
+  const context = await browser.newContext({viewport: {width, height: width < 768 ? 844 : 900}, colorScheme: 'light'});
+  const page = await context.newPage();
+  const errors = [];
+  page.on('pageerror', error => errors.push(error.message));
+  try {
+    await page.goto(base);
+    const password = page.getByLabel('密码', {exact: true});
+    const sample = 'visibility-test-password';
+    await page.getByLabel('账号', {exact: true}).fill('visibility-test-user');
+    await password.fill(sample);
+    assert.equal(await password.getAttribute('type'), 'password');
+    await page.getByRole('button', {name: '显示密码', exact: true}).click();
+    assert.equal(await password.getAttribute('type'), 'text');
+    assert.equal(await password.inputValue(), sample);
+    const hide = page.getByRole('button', {name: '隐藏密码', exact: true});
+    assert.equal(await hide.getAttribute('aria-pressed'), 'true');
+    const inputBounds = await password.boundingBox();
+    const buttonBounds = await hide.boundingBox();
+    assert(buttonBounds.x >= inputBounds.x && buttonBounds.x + buttonBounds.width <= inputBounds.x + inputBounds.width);
+    assert(buttonBounds.y >= inputBounds.y && buttonBounds.y + buttonBounds.height <= inputBounds.y + inputBounds.height);
+    await screenshot(page, width + '-login-visible');
+    await hide.focus();
+    await page.keyboard.press('Space');
+    await page.getByRole('button', {name: '显示密码', exact: true}).waitFor();
+    assert.equal(await password.getAttribute('type'), 'password');
+    assert.equal(await password.inputValue(), sample);
+    assert.equal(loginPayloads.length, 0);
+    await screenshot(page, width + '-login-hidden');
+    await page.getByRole('button', {name: '显示密码', exact: true}).press('Enter');
+    await page.getByRole('button', {name: '隐藏密码', exact: true}).waitFor();
+    assert.equal(loginPayloads.length, 0);
+    await page.getByRole('button', {name: '登录', exact: true}).click();
+    await page.getByRole('heading', {name: '登录你的工作台'}).waitFor({state: 'hidden'});
+    assert.deepEqual(loginPayloads, [{account: 'visibility-test-user', password: sample}]);
+    loggedIn = false;
+    await page.reload();
+    await page.getByRole('button', {name: '显示密码', exact: true}).waitFor();
+    assert.equal(await password.getAttribute('type'), 'password');
+    assert.deepEqual(errors, []);
+    return {width, passwordVisibility: true, keyboard: true, valuePreserved: true, loginPayload: true};
+  } finally { await context.close(); }
+}
 (async () => {
   await mkdir(output, {recursive: true});
   await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
   const base = 'http://127.0.0.1:' + server.address().port;
-  const browser = await chromium.launch({channel: 'chrome', headless: true});
+  let browser;
   try {
+    browser = await chromium.launch({channel: process.env.AIO_BROWSER_CHANNEL || 'chrome', headless: true});
     const results = [];
-    for (const width of process.env.AIO_UI_STATES_ONLY ? [] : [390, 768, 1440]) results.push(await run(browser, width, base));
-    results.push(await states(browser, base));
+    for (const width of [390, 1440]) results.push(await passwordVisibility(browser, base, width));
+    if (!process.env.AIO_UI_LOGIN_ONLY) {
+      for (const width of process.env.AIO_UI_STATES_ONLY ? [] : [390, 768, 1440]) results.push(await run(browser, width, base));
+      results.push(await states(browser, base));
+    }
     assert.deepEqual(forbidden, []);
     await writeFile(resolve(output, 'report.json'), JSON.stringify({results, registryRequests: forbidden}, null, 2));
     console.log(JSON.stringify(results));
-  } finally { await browser.close(); server.closeAllConnections(); server.close(); }
+  } finally { await browser?.close(); server.closeAllConnections(); server.close(); }
 })().catch(error => { console.error(error); process.exitCode = 1; });

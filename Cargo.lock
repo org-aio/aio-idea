@@ -202,9 +202,9 @@ dependencies = [
 [[package]]
 name = "aio-plugin-identity-client"
 version = "0.1.0"
-source = "git+https://github.com/zjarlin/aio-plugin-identity.git?rev=8d1b02879d604c264699e81c17853d3df921b87e#8d1b02879d604c264699e81c17853d3df921b87e"
+source = "git+https://github.com/zjarlin/aio-plugin-identity.git?rev=a74d2e0531a6f3a907f6e5a4f1fa61c5cbc44f62#a74d2e0531a6f3a907f6e5a4f1fa61c5cbc44f62"
 dependencies = [
- "aio-plugin-identity-model 0.1.0 (git+https://github.com/zjarlin/aio-plugin-identity.git?rev=8d1b02879d604c264699e81c17853d3df921b87e)",
+ "aio-plugin-identity-model 0.1.0 (git+https://github.com/zjarlin/aio-plugin-identity.git?rev=a74d2e0531a6f3a907f6e5a4f1fa61c5cbc44f62)",
  "az-dioxus-admin-shell",
  "az-ui-components",
  "dill",
@@ -227,6 +227,14 @@ dependencies = [
 name = "aio-plugin-identity-model"
 version = "0.1.0"
 source = "git+https://github.com/zjarlin/aio-plugin-identity.git?rev=8d1b02879d604c264699e81c17853d3df921b87e#8d1b02879d604c264699e81c17853d3df921b87e"
+dependencies = [
+ "serde",
+]
+
+[[package]]
+name = "aio-plugin-identity-model"
+version = "0.1.0"
+source = "git+https://github.com/zjarlin/aio-plugin-identity.git?rev=a74d2e0531a6f3a907f6e5a4f1fa61c5cbc44f62#a74d2e0531a6f3a907f6e5a4f1fa61c5cbc44f62"
 dependencies = [
  "serde",
 ]
