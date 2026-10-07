@@ -34,7 +34,7 @@ aio_plugin_rbac_server = { package = "aio-plugin-rbac-server", git = "https://gi
 aio_plugin_tenant_client = { package = "aio-plugin-tenant-client", git = "https://github.com/zjarlin/aio-plugin-tenant.git", rev = "ba8a56cc4dbe07e0587ecf25982251165cbf83a4", optional = true }
 aio_plugin_tenant_server = { package = "aio-plugin-tenant-server", git = "https://github.com/zjarlin/aio-plugin-tenant.git", rev = "ba8a56cc4dbe07e0587ecf25982251165cbf83a4", optional = true }
 aio_plugin_platform_links = { package = "aio-plugin-platform-links", git = "https://github.com/org-aio/aio-plugin-platform-links.git", rev = "8be1263cd6a5e366fbe8ff2bf5a1f95580ccaa0a", optional = true }
-aio_plugin_space_client = { package = "aio-plugin-space-client", git = "https://github.com/org-aio/aio-plugin-space.git", rev = "f75a7e9da95a63430773dd85882d360e3069147d", optional = true }
+aio_plugin_space_client = { package = "aio-plugin-space-client", git = "https://github.com/org-aio/aio-plugin-space.git", rev = "4b37ce8654ceeccb6885dfd8724e9b7801fa649b", optional = true }
 
 
 [features]
