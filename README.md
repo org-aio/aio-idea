@@ -30,6 +30,14 @@ The top scenario selector is the root of the current menu tree; the sidebar only
 
 Pages mount on first access; menu switches only hide the old page. The shared shell keeps the 6 most recently visited console pages and 2 account pages by default, without moving mounted iframes; switching back within the cache preserves Compose/JS state, requiring no new tickets or asset downloads. When capacity is exceeded, the least-recently-visited non-current page is evicted; reopening it after eviction is a cold load. The catalog refreshes every 30 seconds and on window refocus; version, activation-generation or page-permission changes destroy the corresponding cache, while session, tenant or user-permission changes rebuild the whole page pool. Every backend request is still authorized immediately — the frontend catalog refresh is not a security boundary.
 
+## 可分享页面状态
+
+场景和菜单导航使用外层 `page` 参数，账户全屏页使用 `account`。文件列表通过 `view.category`、`view.q`、`view.sort` 保存分类、搜索和排序，例如 `/?page=file-list&view.category=application&view.q=package&view.sort=name&scroll=files-list:0:420`。滚动只替换当前历史节点；新浏览器上下文、刷新和前进后退均从链接恢复，不依赖发送者缓存。
+
+其他原生插件使用 `use_page_url_state` 显式登记业务字段；iframe 的 hash 路由自动同步到外层 `route`，memory router 或未编码到路由的筛选使用 `aioPlugin.navigate/onNavigationChange` 接入。内部滚动容器声明稳定的 `data-url-scroll`。凭据、未保存表单和批量操作选择不进入分享链接，服务端权限不因 URL 改变。
+
+`tests/browser/url-state.cjs` 使用隔离 API 夹具验收真实 Dioxus Web，覆盖桌面、手机、文件分类/搜索/排序/滚动、非法链接恢复，以及两种 iframe ABI 的路由和滚动往返。通过 `AIO_URL` 指向本机 `dx serve --platform web` 实例运行，不调用生产接口；结果写入 `target/url-state-test/report.json`。
+
 当前默认系统树由独立插件仓库共同贡献，目录节点本身不是业务页面：
 
 The current default system tree is contributed by independent plugin repositories; the catalog nodes themselves are not business pages:
