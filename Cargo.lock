@@ -345,7 +345,7 @@ dependencies = [
 [[package]]
 name = "aio-plugin-space-client"
 version = "0.1.0"
-source = "git+https://github.com/org-aio/aio-plugin-space.git?rev=4b37ce8654ceeccb6885dfd8724e9b7801fa649b#4b37ce8654ceeccb6885dfd8724e9b7801fa649b"
+source = "git+https://github.com/org-aio/aio-plugin-space.git?rev=a6053141b7159e6fb6224c3d47f02a2a97149a9f#a6053141b7159e6fb6224c3d47f02a2a97149a9f"
 dependencies = [
  "az-dioxus-admin-shell",
  "dill",
@@ -8412,7 +8412,7 @@ version = "0.1.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c2a7b1c03c876122aa43f3020e6c3c3ee5c05081c9a00739faf7503aeba10d22"
 dependencies = [
- "windows-sys 0.48.0",
+ "windows-sys 0.61.2",
 ]
 
 [[package]]
