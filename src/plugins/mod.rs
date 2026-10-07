@@ -21,7 +21,7 @@ pub fn client_catalog() -> anyhow::Result<ClientCatalog> {
     aio_plugin_account::register(&mut builder);
     aio_plugin_tenant_client::register(&mut builder);
     aio_plugin_platform_links::register(&mut builder);
-    aio_plugin_space_client::register(&mut builder);
+    aio_plugin_device_client::register(&mut builder);
     builder.validate().context("校验页面插件依赖图失败")?;
     let catalog: Catalog = builder.build();
     Ok(ClientCatalog {
@@ -133,6 +133,14 @@ mod tests {
                 .map(|group| group.id.as_str())
                 .collect::<Vec<_>>(),
             ["space"]
+        );
+        assert_eq!(
+            space
+                .menu_path
+                .iter()
+                .map(|group| group.label.as_str())
+                .collect::<Vec<_>>(),
+            ["设备助手"]
         );
         assert_eq!(space.required_permission, None);
 

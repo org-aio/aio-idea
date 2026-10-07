@@ -52,7 +52,7 @@ async function main() {
     await page.goto(link);
     await page.getByRole('button', {name:'授权这台设备',exact:true}).waitFor();
     const commands = page.locator('section').filter({hasText:'配对新设备'});
-    await commands.getByText('npm install -g @zjarlin/aio-space',{exact:false}).first().waitFor();
+    await commands.getByText('npm install -g @zjarlin/aio',{exact:false}).first().waitFor();
     assert.equal(await commands.getByText('brew install restic',{exact:false}).count(),1);
     assert.equal(await commands.getByText('--no-browser --foreground',{exact:false}).count(),1);
     await commands.getByRole('button',{name:'复制命令',exact:true}).first().click();
