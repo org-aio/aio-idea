@@ -47,6 +47,8 @@ Agent 使用原生 v2 整包中的 Linux ELF 与 Compose 前端，Pi SDK 依赖�
 ./deploy/252/publish.zsh <完整 Git SHA>
 ```
 
+在 252 本机发布可设置 `AIO_DEPLOY_HOST=local`，使用相同的构建、候选目录、原子切换、健康检查和回滚流程，无需 SSH 登录本机。仍需拥有部署目录和 systemd 管理权限。
+
 发布器拒绝未提交的工作树和非完整 SHA。它会在本地分别执行服务端测试、Web 检查、glibc 2.17 服务端构建和 Web 构建，将候选二进制、前端资源、`aio.toml` 和两项 systemd 单元上传到远端临时目录。切换前会备份现有 unit 与 enabled 状态；候选服务只有在 `aio-idea.service` 的 `MainPID` 确实执行当前 release 二进制后，本机 `/health` 才会被接受，随后还必须在 60 秒内通过公网健康检查。任一步失败都会恢复旧链接、unit、enabled 状态和服务，并删除失败发布目录。
 
 可以用绝对路径 `AIO_DEPLOY_TARGET_DIR` 复用本机 Cargo 编译缓存；源码仍来自完整 SHA 的隔离 worktree，所有测试及构建照常执行。

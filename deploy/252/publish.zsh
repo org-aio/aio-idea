@@ -11,6 +11,14 @@ readonly target_directory="${target%%.*}"
 readonly repository="$(git rev-parse --show-toplevel)"
 readonly revision="${1:-$(git -C "$repository" rev-parse HEAD)}"
 
+run_remote() {
+    if [[ "$deploy_host" == "local" ]]; then
+        sh -c "$1"
+    else
+        ssh "$deploy_host" "$1"
+    fi
+}
+
 if (( $# > 1 )); then
     print -u2 "用法: $0 [完整 Git SHA]"
     exit 64
@@ -69,15 +77,19 @@ cp deploy/252/aio-idea.service "$release/systemd/aio-idea.service"
 readonly incoming="$deploy_root/releases/.incoming-$revision"
 readonly remote_release="$deploy_root/releases/$revision"
 
-ssh "$deploy_host" "set -eu
+run_remote "set -eu
 test ! -e '$remote_release'
 rm -rf '$incoming'
 mkdir -p '$incoming'"
 print "上传候选发布物"
-rsync -rlz --checksum --link-dest="$deploy_root/current/" "$release/" "$deploy_host:$incoming/"
+if [[ "$deploy_host" == "local" ]]; then
+    rsync -rlz --checksum --link-dest="$deploy_root/current/" "$release/" "$incoming/"
+else
+    rsync -rlz --checksum --link-dest="$deploy_root/current/" "$release/" "$deploy_host:$incoming/"
+fi
 
 print "切换 252 发布物"
-ssh "$deploy_host" "set -eu
+run_remote "set -eu
 deploy_root='$deploy_root'
 incoming='$incoming'
 remote_release='$remote_release'
