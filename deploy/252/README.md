@@ -6,6 +6,8 @@
 
 `aio-lan.conf` 提供 `https://aio-lan.addzero.site:3443`，仅绑定 252 的局域网接口并接受同一子网；应用保持回环监听。域名为不经 Cloudflare 代理的私网 A 记录，证书通过 DNS-01 签发。将 `AIO_LAN_ORIGINS=https://aio-lan.addzero.site:3443` 放入 `aio-idea.service` 的本机 drop-in，宿主才会公布入口。
 
+该入口显式关闭代理缓存，防止继承面板配置后丢弃上游 `Range`。上线需验证归档对象的范围请求返回 HTTP 206、正确的 `Content-Range` 和片段长度，并完成小文件快照的取回校验。
+
 证书脚本 `lan-certificate.cjs` 复用本机 Cloudflare 凭据，依赖 `deploy/package.json` 中的 acme-client；凭据与私钥不进入发布物。运行环境设置 `AIO_LAN_DOMAIN`、`AIO_LAN_ADDRESS`、`AIO_LAN_TLS_DIR`、`AIO_LAN_TOOLS`，可覆盖 `AIO_CLOUDFLARE_CERT`。生产将脚本和依赖保留在 `/opt/aio-idea/lan`，通过 `aio-lan-renew.timer` 每日检查，剩余 30 天时续期，成功后校验并重载 Nginx。
 
 先验证 DNS、证书和局域网 `/api/runtime/transport`，再公布入口；局域网不可达时自动回退公网。只升级设备助手后台，不需要重新配对或重启 Codex/Buddy。浏览器本地网络权限由用户的浏览器管理。协议与通用传输边界见平台的 `docs/plugin/device-transport.md`。
