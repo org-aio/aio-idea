@@ -48,6 +48,7 @@ pub async fn run() -> Result<()> {
         crate::host::ProductIdentity::new(identity, &config.database_url).await?,
     );
     let runtime = runtime::server::RuntimeState::initialize(config, identity).await?;
+    let frame_policy = HeaderValue::from_str(&runtime.frame_policy())?;
     let application = az_plugin_host::static_files::application(web_dist).layer(
         axum::middleware::from_fn_with_state(runtime.clone(), runtime::server::bootstrap_document),
     );
@@ -58,13 +59,15 @@ pub async fn run() -> Result<()> {
         .route("/api/{*path}", any(api_not_found))
         .fallback_service(application)
         .layer(axum::middleware::map_response(
-            |mut response: axum::response::Response| async move {
-                // 账户页面只允许装载本站隔离文档，阻止插件将自身导航到外部接收端。
-                response.headers_mut().append(
-                    header::CONTENT_SECURITY_POLICY,
-                    HeaderValue::from_static("frame-src 'self'; object-src 'none'"),
-                );
-                response
+            move |mut response: axum::response::Response| {
+                let frame_policy = frame_policy.clone();
+                async move {
+                    // 账户页面只允许本站及部署声明的局域网隔离文档。
+                    response
+                        .headers_mut()
+                        .append(header::CONTENT_SECURITY_POLICY, frame_policy);
+                    response
+                }
             },
         ));
     let address = SocketAddr::from((host, port));

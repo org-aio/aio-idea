@@ -1,0 +1,14 @@
+[Unit]
+Description=Renew AIO LAN HTTPS certificate
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+EnvironmentFile=/opt/aio-idea/lan/config.env
+ExecStart=/opt/aio-idea/lan/node /opt/aio-idea/lan/renew.cjs
+ExecStartPost=/www/server/nginx/sbin/nginx -t
+ExecStartPost=/www/server/nginx/sbin/nginx -s reload
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=true

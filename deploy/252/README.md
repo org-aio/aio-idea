@@ -2,6 +2,14 @@
 
 此目录记录 `aio.addzero.site` 在 252 主机的运行单元。应用监听 `127.0.0.1:3080`，独立 Cloudflare Tunnel `4be41351-a4ef-4ce2-9ef2-f573946fcfcf` 提供 TLS 公网入口。
 
+## 局域网加速
+
+`aio-lan.conf` 提供 `https://aio-lan.addzero.site:3443`，仅绑定 252 的局域网接口并接受同一子网；应用保持回环监听。域名为不经 Cloudflare 代理的私网 A 记录，证书通过 DNS-01 签发。将 `AIO_LAN_ORIGINS=https://aio-lan.addzero.site:3443` 放入 `aio-idea.service` 的本机 drop-in，宿主才会公布入口。
+
+证书脚本 `lan-certificate.cjs` 复用本机 Cloudflare 凭据，依赖 `deploy/package.json` 中的 acme-client；凭据与私钥不进入发布物。运行环境设置 `AIO_LAN_DOMAIN`、`AIO_LAN_ADDRESS`、`AIO_LAN_TLS_DIR`、`AIO_LAN_TOOLS`，可覆盖 `AIO_CLOUDFLARE_CERT`。生产将脚本和依赖保留在 `/opt/aio-idea/lan`，通过 `aio-lan-renew.timer` 每日检查，剩余 30 天时续期，成功后校验并重载 Nginx。
+
+先验证 DNS、证书和局域网 `/api/runtime/transport`，再公布入口；局域网不可达时自动回退公网。只升级设备助手后台，不需要重新配对或重启 Codex/Buddy。浏览器本地网络权限由用户的浏览器管理。协议与通用传输边界见平台的 `docs/plugin/device-transport.md`。
+
 发布物按提交放入 `/opt/aio-idea/releases/<revision>`，健康检查通过后原子更新 `/opt/aio-idea/current`。失败时保留旧软链接和旧发布目录。
 
 252 使用 glibc 2.17，服务端必须显式构建为对应 Zig 目标：

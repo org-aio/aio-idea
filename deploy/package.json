@@ -1,6 +1,11 @@
 {
   "name": "aio-deploy-tools",
   "private": true,
-  "engines": { "node": ">=22.12" },
-  "dependencies": { "parse5": "8.0.0" }
+  "engines": {
+    "node": ">=22.12"
+  },
+  "dependencies": {
+    "acme-client": "5.4.0",
+    "parse5": "8.0.0"
+  }
 }
