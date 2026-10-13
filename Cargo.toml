@@ -11,8 +11,8 @@ async-trait = { version = "0.1", optional = true }
 axum = { version = "0.8.6", optional = true }
 dill = "0.15.0"
 dioxus = { version = "=0.7.9", default-features = false, features = ["macro", "html", "signals"], optional = true }
-az-dioxus-admin-shell = { git = "https://github.com/zjarlin/dioxus-admin-workbench.git", rev = "1a867f21936e647069debe70e1647a0a4ef3d7c6", default-features = false, optional = true }
-az-ui-components = { git = "https://github.com/zjarlin/dioxus-admin-workbench.git", rev = "1a867f21936e647069debe70e1647a0a4ef3d7c6", optional = true }
+az-dioxus-admin-shell = { git = "https://github.com/zjarlin/dioxus-admin-workbench.git", rev = "0021eaaa3cf4e3be2521318b0995f621fb5eecec", default-features = false, optional = true }
+az-ui-components = { git = "https://github.com/zjarlin/dioxus-admin-workbench.git", rev = "0021eaaa3cf4e3be2521318b0995f621fb5eecec", optional = true }
 gloo-net = { version = "0.6.0", features = ["http", "json"], optional = true }
 serde = { version = "1.0.228", features = ["derive"] }
 serde_json = "1.0.145"
