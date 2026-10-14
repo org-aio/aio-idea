@@ -418,6 +418,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "alloc-no-stdlib"
+version = "3.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c2fb6cfd47bf496ff64095c20eaba0c201404ee38714d4142fcfa1dc334fcc7a"
+
+[[package]]
+name = "alloc-stdlib"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0b5c1865780388bfa186411ab5f247819487fc4864c6e9c3106611fa347586e1"
+dependencies = [
+ "alloc-no-stdlib",
+]
+
+[[package]]
 name = "allocator-api2"
 version = "0.2.21"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -751,7 +766,7 @@ dependencies = [
 [[package]]
 name = "az-plugin-bundle"
 version = "2026.5.10"
-source = "git+https://github.com/org-aio/aio-platform.git?rev=d31834d69e011503918261154629c9c10dd89fab#d31834d69e011503918261154629c9c10dd89fab"
+source = "git+https://github.com/org-aio/aio-platform.git?rev=12e88317e253fd4d5af4b1d543365e8e9305f36d#12e88317e253fd4d5af4b1d543365e8e9305f36d"
 dependencies = [
  "anyhow",
  "az-plugin-contract",
@@ -769,7 +784,7 @@ dependencies = [
 [[package]]
 name = "az-plugin-contract"
 version = "2026.5.10"
-source = "git+https://github.com/org-aio/aio-platform.git?rev=d31834d69e011503918261154629c9c10dd89fab#d31834d69e011503918261154629c9c10dd89fab"
+source = "git+https://github.com/org-aio/aio-platform.git?rev=12e88317e253fd4d5af4b1d543365e8e9305f36d#12e88317e253fd4d5af4b1d543365e8e9305f36d"
 dependencies = [
  "serde",
  "serde_json",
@@ -779,7 +794,7 @@ dependencies = [
 [[package]]
 name = "az-plugin-delivery"
 version = "2026.5.10"
-source = "git+https://github.com/org-aio/aio-platform.git?rev=d31834d69e011503918261154629c9c10dd89fab#d31834d69e011503918261154629c9c10dd89fab"
+source = "git+https://github.com/org-aio/aio-platform.git?rev=12e88317e253fd4d5af4b1d543365e8e9305f36d#12e88317e253fd4d5af4b1d543365e8e9305f36d"
 dependencies = [
  "anyhow",
  "serde",
@@ -789,7 +804,7 @@ dependencies = [
 [[package]]
 name = "az-plugin-development"
 version = "2026.10.15"
-source = "git+https://github.com/org-aio/aio-platform.git?rev=d31834d69e011503918261154629c9c10dd89fab#d31834d69e011503918261154629c9c10dd89fab"
+source = "git+https://github.com/org-aio/aio-platform.git?rev=12e88317e253fd4d5af4b1d543365e8e9305f36d#12e88317e253fd4d5af4b1d543365e8e9305f36d"
 dependencies = [
  "anyhow",
  "az-plugin-manifest",
@@ -804,7 +819,7 @@ dependencies = [
 [[package]]
 name = "az-plugin-host"
 version = "2026.10.15"
-source = "git+https://github.com/org-aio/aio-platform.git?rev=d31834d69e011503918261154629c9c10dd89fab#d31834d69e011503918261154629c9c10dd89fab"
+source = "git+https://github.com/org-aio/aio-platform.git?rev=12e88317e253fd4d5af4b1d543365e8e9305f36d#12e88317e253fd4d5af4b1d543365e8e9305f36d"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -817,7 +832,7 @@ dependencies = [
  "az-plugin-manifest",
  "az-plugin-package",
  "az-plugin-runtime",
- "az-tool 0.1.0 (git+https://github.com/org-aio/aio-platform.git?rev=d31834d69e011503918261154629c9c10dd89fab)",
+ "az-tool 0.1.0 (git+https://github.com/org-aio/aio-platform.git?rev=12e88317e253fd4d5af4b1d543365e8e9305f36d)",
  "az-ui-components",
  "base64 0.22.1",
  "dill",
@@ -848,7 +863,7 @@ dependencies = [
 [[package]]
 name = "az-plugin-manifest"
 version = "2026.5.10"
-source = "git+https://github.com/org-aio/aio-platform.git?rev=d31834d69e011503918261154629c9c10dd89fab#d31834d69e011503918261154629c9c10dd89fab"
+source = "git+https://github.com/org-aio/aio-platform.git?rev=12e88317e253fd4d5af4b1d543365e8e9305f36d#12e88317e253fd4d5af4b1d543365e8e9305f36d"
 dependencies = [
  "anyhow",
  "semver",
@@ -864,7 +879,7 @@ dependencies = [
 [[package]]
 name = "az-plugin-package"
 version = "2026.5.10"
-source = "git+https://github.com/org-aio/aio-platform.git?rev=d31834d69e011503918261154629c9c10dd89fab#d31834d69e011503918261154629c9c10dd89fab"
+source = "git+https://github.com/org-aio/aio-platform.git?rev=12e88317e253fd4d5af4b1d543365e8e9305f36d#12e88317e253fd4d5af4b1d543365e8e9305f36d"
 dependencies = [
  "anyhow",
  "az-plugin-manifest",
@@ -880,7 +895,7 @@ dependencies = [
 [[package]]
 name = "az-plugin-runtime"
 version = "2026.5.10"
-source = "git+https://github.com/org-aio/aio-platform.git?rev=d31834d69e011503918261154629c9c10dd89fab#d31834d69e011503918261154629c9c10dd89fab"
+source = "git+https://github.com/org-aio/aio-platform.git?rev=12e88317e253fd4d5af4b1d543365e8e9305f36d#12e88317e253fd4d5af4b1d543365e8e9305f36d"
 dependencies = [
  "aes-gcm",
  "anyhow",
@@ -904,7 +919,7 @@ dependencies = [
 [[package]]
 name = "az-tool"
 version = "0.1.0"
-source = "git+https://github.com/org-aio/aio-platform.git?rev=d31834d69e011503918261154629c9c10dd89fab#d31834d69e011503918261154629c9c10dd89fab"
+source = "git+https://github.com/org-aio/aio-platform.git?rev=12e88317e253fd4d5af4b1d543365e8e9305f36d#12e88317e253fd4d5af4b1d543365e8e9305f36d"
 dependencies = [
  "anyhow",
  "semver",
@@ -1017,6 +1032,27 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "cdeb9d870516001442e364c5220d3574d2da8dc765554b4a617230d33fa58ef5"
 dependencies = [
  "objc2",
+]
+
+[[package]]
+name = "brotli"
+version = "9.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f8b851b75c23ca7873623d612fe49bd1989aeb03d08fb9432187eb253d3d4c6b"
+dependencies = [
+ "alloc-no-stdlib",
+ "alloc-stdlib",
+ "brotli-decompressor",
+]
+
+[[package]]
+name = "brotli-decompressor"
+version = "6.0.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "941cd9bd4ddab83cb46fa5a2d428f1c857b24ac78cb876cf7beb710840934bd7"
+dependencies = [
+ "alloc-no-stdlib",
+ "alloc-stdlib",
 ]
 
 [[package]]
@@ -1282,6 +1318,7 @@ version = "0.4.45"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "98fc98460ba0ad5317075d3632b8dfc45d0be8c4a49347c2a38272019717614a"
 dependencies = [
+ "brotli",
  "compression-core",
  "flate2",
  "memchr",
