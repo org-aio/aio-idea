@@ -1,7 +1,7 @@
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
-const {gzipSync} = require('node:zlib');
+const {gzipSync, brotliCompressSync, constants: zlib} = require('node:zlib');
 const {parse, serialize} = require('parse5');
 const root = path.resolve(process.argv[2] || 'target/dx/aio-idea/release/web/public');
 const assets = path.join(root, 'assets');
@@ -38,10 +38,18 @@ for (const name of fs.readdirSync(assets, {recursive: true})) {
   const full = path.join(assets, name);
   if (!fs.statSync(full).isFile()) continue;
   const bytes = fs.readFileSync(full);
+  // Brotli 与 gzip 同时预压缩：宿主按 Accept-Encoding 优先交付更小的 .br。
+  const brotli = brotliCompressSync(bytes, {params: {[zlib.BROTLI_PARAM_QUALITY]: 11}});
   const compressed = gzipSync(bytes, {level: 9});
+  const entry = {path: name, bytes: bytes.length};
   if (compressed.length < bytes.length) {
     fs.writeFileSync(`${full}.gz`, compressed);
-    report.push({path: name, bytes: bytes.length, gzipBytes: compressed.length});
+    entry.gzipBytes = compressed.length;
   }
+  if (brotli.length < bytes.length) {
+    fs.writeFileSync(`${full}.br`, brotli);
+    entry.brotliBytes = brotli.length;
+  }
+  if (entry.gzipBytes || entry.brotliBytes) report.push(entry);
 }
 console.log(JSON.stringify({preload: href, styles, assets: report}));
