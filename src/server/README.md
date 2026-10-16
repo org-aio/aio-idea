@@ -11,6 +11,8 @@
 
 产品使用平台默认插件组合，Rhai/TypeScript 增强、Sidecar、MCP 和 gRPC 共享同一运行时权限和版本服务。SIGTERM、Ctrl-C 或监听失败会进入 `RuntimeState::shutdown`，等待已进入的有限工作完成并反序释放资源。发布或进程重启不删除持久化安装及活动版本；不能从源码更新推断现役服务已经升级。
 
+产品的 `server` feature 显式启用平台的 `server`、`wasm` 和 `sidecar`，保留完整插件运行能力。平台精简宿主可仅启用 `server` 提供 MCP/gRPC 与外部执行器，不再编译 Wasmtime；编译选择与 Dill 运行时装配分别决定可用实现和实际启动的插件。
+
 # 增强协议验收
 
 从 `src/server.rs` 的运行时初始化进入，再查看平台的 `runtime/server/plugins` 与 `runtime/server/protocols`。协议入口使用产品的 `ProductIdentity`，沿用真实登录会话与当前租户权限。
