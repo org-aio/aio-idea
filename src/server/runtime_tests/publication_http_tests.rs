@@ -45,7 +45,7 @@ async fn binary_cli_publishes_downloads_recovers_and_rolls_back_over_http() -> R
         &cache,
     )
     .await?;
-    let router = super::router(state.clone())
+    let router = super::router(state.clone())?
         .merge(aio_plugin_identity_server::router(&catalog)?)
         .merge(aio_plugin_tenant_server::router(&catalog)?);
     let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await?;

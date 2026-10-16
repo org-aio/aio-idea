@@ -109,8 +109,8 @@ fn publish_account_allowed(configured: Option<&str>, account: &str) -> bool {
     })
 }
 
-/// 现有产品服务贡献身份、授权与计费接口；连接池跟随宿主生命周期关闭。
-pub struct ProductIdentityPlugin(pub Arc<aio_plugin_identity_server::IdentityService>);
+/// 当前代的产品身份服务贡献身份、授权与计费接口；连接池由本插件关闭。
+pub struct ProductIdentityPlugin;
 
 impl az_plugin_core::Plugin<az_plugin_host::runtime::server::plugins::RuntimeAssembly>
     for ProductIdentityPlugin
@@ -121,7 +121,7 @@ impl az_plugin_core::Plugin<az_plugin_host::runtime::server::plugins::RuntimeAss
     ) -> az_plugin_core::PluginFuture<'a> {
         Box::pin(async move {
             use az_plugin_host::runtime::server::plugins::Resource;
-            assembly.services.add_builder(self.0.clone());
+            assembly.require_service::<aio_plugin_identity_server::IdentityService>();
             assembly.declare_resource::<ProductIdentity>()?;
             assembly
                 .services

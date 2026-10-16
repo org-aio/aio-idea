@@ -33,25 +33,12 @@ pub async fn run() -> Result<()> {
     let config = crate::host::configuration()?;
     // 在连接业务数据库前持久化候选；端口冲突则不会污染候选记录。
     let bootstrap = crate::host::RuntimeBootstrap::load(&config.cache_root)?;
-    let plugin_catalog = plugins::server_catalog()?;
-    let identity = aio_plugin_identity_server::service(&plugin_catalog)?;
-    identity.initialize().await?;
-    aio_plugin_dictionary_server::service(&plugin_catalog)?
-        .initialize()
-        .await?;
-    aio_plugin_file_server::service(&plugin_catalog)?
-        .initialize()
-        .await?;
-    aio_plugin_rbac_server::service(&plugin_catalog)?
-        .initialize()
-        .await?;
     let mut runtime_plugins = runtime::server::plugins::default_plugins()?;
-    runtime_plugins.push(std::sync::Arc::new(crate::host::ProductIdentityPlugin(
-        identity.clone(),
-    )));
+    runtime_plugins.extend(plugins::server::server_plugins()?);
+    runtime_plugins.push(std::sync::Arc::new(crate::host::ProductIdentityPlugin));
     let (runtime, mut composition) = bootstrap
-        .start(config, runtime_plugins, identity, move |state, runtime| {
-            application::router(state, runtime, &plugin_catalog, web_dist.clone())
+        .start(config, runtime_plugins, move |state, runtime| {
+            application::router(state, runtime, web_dist.clone())
         })
         .await?;
     let result = serve(&runtime, &mut composition, listener).await;

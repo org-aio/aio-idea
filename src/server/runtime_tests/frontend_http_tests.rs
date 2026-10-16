@@ -41,7 +41,7 @@ async fn frontend_http_mounts_verified_assets_and_revokes_live_access() -> Resul
         &temporary.path().join("cache"),
     )
     .await?;
-    let router = super::router(state.clone()).merge(aio_plugin_identity_server::router(&catalog)?);
+    let router = super::router(state.clone())?.merge(aio_plugin_identity_server::router(&catalog)?);
     let server = tokio::spawn(async move { axum::serve(listener, router).await });
     let result = exercise(&state, &base, &identity).await;
     server.abort();

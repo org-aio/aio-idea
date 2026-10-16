@@ -106,6 +106,8 @@ def ready():
 def start():
     launch()
     until(ready)
+    for path in ["/api/dictionaries", "/api/files", "/api/rbac", "/api/tenants", "/api/plugins/marketplace"]:
+        assert request(path)[0] == 404, "disabled system route reappeared: " + path
 
 
 def stop():
@@ -121,7 +123,9 @@ def command(name, success=True):
     return result.stdout.decode("utf-8")
 
 
-good = {"schema_version": 1, "mcp": {"enabled": False}, "evolution": {"enabled": False}}
+good = {"schema_version": 1, "mcp": {"enabled": False}, "evolution": {"enabled": False},
+        "dictionary": {"enabled": False}, "files": {"enabled": False},
+        "access_control": {"enabled": False}, "tenants": {"enabled": False}, "marketplace": {"enabled": False}}
 try:
     assert command("status").strip() == "null"
     assert not cache.exists()

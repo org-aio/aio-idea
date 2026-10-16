@@ -3,6 +3,9 @@
 use super::*;
 use serde_json::{Value, json};
 
+#[path = "system_service_tests.rs"]
+mod system_services;
+
 #[tokio::test]
 #[ignore = "需要本机独立身份测试库、临时文件目录和测试账户"]
 async fn deployment_composition_switches_protocols_and_rebuilds_identity_without_rebinding()
@@ -17,18 +20,6 @@ async fn deployment_composition_switches_protocols_and_rebuilds_identity_without
         std::env::var("AIO_DATABASE_URL")? == database,
         "测试库必须一致"
     );
-    let catalog = crate::plugins::server_catalog()?;
-    let identity = aio_plugin_identity_server::service(&catalog)?;
-    identity.initialize().await?;
-    aio_plugin_dictionary_server::service(&catalog)?
-        .initialize()
-        .await?;
-    aio_plugin_file_server::service(&catalog)?
-        .initialize()
-        .await?;
-    aio_plugin_rbac_server::service(&catalog)?
-        .initialize()
-        .await?;
     let root = tempfile::tempdir()?;
     let web = root.path().join("web");
     tokio::fs::create_dir_all(&web).await?;
@@ -50,13 +41,20 @@ async fn deployment_composition_switches_protocols_and_rebuilds_identity_without
         remote_capabilities: None,
     };
     let mut plugins = az_plugin_host::runtime::server::plugins::default_plugins()?;
-    plugins.push(Arc::new(ProductIdentityPlugin(identity.clone())));
+    plugins.extend(crate::plugins::server::server_plugins()?);
+    plugins.push(Arc::new(crate::host::ProductIdentityPlugin));
     let path = root.path().join("composition.json");
     tokio::fs::write(&path, br#"{"schema_version":1}"#).await?;
     let bootstrap = RuntimeBootstrap::open(Some(path.clone()), &config.cache_root)?;
+    let generations = Arc::new(std::sync::Mutex::new(Vec::new()));
+    let observed = generations.clone();
     let (host, mut control) = bootstrap
-        .start(config, plugins, identity, move |state, runtime| {
-            crate::server::application::router(state, runtime, &catalog, web.clone())
+        .start(config, plugins, move |state, runtime| {
+            observed
+                .lock()
+                .map_err(|_| anyhow::anyhow!("代数记录锁损坏"))?
+                .push(state.clone());
+            crate::server::application::router(state, runtime, web.clone())
         })
         .await?;
     let router = host.router();
@@ -87,6 +85,7 @@ async fn deployment_composition_switches_protocols_and_rebuilds_identity_without
     assert_eq!(mcp(&client, &base, &cookie).await?, 200);
     assert_eq!(grpc(&client, &base, &cookie).await?, 200);
     assert_snapshot(&client, &base, &cookie).await?;
+    system_services::verify(&mut control, &host, &client, &base, &cookie, &generations).await?;
 
     apply(
         &mut control,
@@ -96,12 +95,15 @@ async fn deployment_composition_switches_protocols_and_rebuilds_identity_without
     .await?;
     assert_eq!(mcp(&client, &base, &cookie).await?, 404);
     assert_eq!(grpc(&client, &base, &cookie).await?, 200);
+    let before_identity = system_services::latest(&generations)?;
     apply(
         &mut control,
         &host,
         json!({"schema_version":1,"grpc":{"enabled":false},"identity":{"restart":1}}),
     )
     .await?;
+    system_services::identity_rebuilt(&before_identity, &system_services::latest(&generations)?)
+        .await?;
     assert_eq!(mcp(&client, &base, &cookie).await?, 200);
     assert_eq!(grpc(&client, &base, &cookie).await?, 404);
     assert_snapshot(&client, &base, &cookie).await?;
@@ -171,15 +173,21 @@ async fn apply(control: &mut RuntimeComposition, host: &RuntimeHost, value: Valu
 }
 
 async fn mcp(client: &reqwest::Client, base: &str, cookie: &str) -> Result<reqwest::StatusCode> {
-    Ok(client
+    let response = client
         .post(format!("{base}/api/runtime/mcp"))
         .header("Cookie", cookie)
         .header("Accept", "application/json, text/event-stream")
         .header("MCP-Protocol-Version", "2025-06-18")
         .json(&json!({"jsonrpc":"2.0","id":1,"method":"tools/list"}))
         .send()
-        .await?
-        .status())
+        .await?;
+    let status = response.status();
+    if status == 200 {
+        let result = response.json::<Value>().await?;
+        assert!(result.get("error").is_none(), "{result}");
+        assert!(result["result"]["tools"].is_array(), "{result}");
+    }
+    Ok(status)
 }
 
 async fn grpc(client: &reqwest::Client, base: &str, cookie: &str) -> Result<reqwest::StatusCode> {
@@ -198,6 +206,17 @@ async fn grpc(client: &reqwest::Client, base: &str, cookie: &str) -> Result<reqw
                 .context("缺少协议类型")?,
             "application/grpc"
         );
+        // gRPC 错误也可能返回 HTTP 200，使用正式客户端验证数据帧和最终状态。
+        use az_plugin_contract::grpc::{ListRequest, enhancements_client::EnhancementsClient};
+        let channel = tonic::transport::Endpoint::from_shared(base.to_owned())?
+            .connect_timeout(Duration::from_secs(5))
+            .timeout(Duration::from_secs(10))
+            .connect()
+            .await?;
+        let mut grpc = EnhancementsClient::new(channel);
+        let mut request = tonic::Request::new(ListRequest {});
+        request.metadata_mut().insert("cookie", cookie.parse()?);
+        grpc.list(request).await?;
     }
     Ok(response.status())
 }

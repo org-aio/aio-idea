@@ -42,6 +42,12 @@ impl Plugin<RuntimeAssembly> for ObserveIdentity {
             assembly.on_initialize::<Self>(|state, _| {
                 Box::pin(async move {
                     let provider = state.service::<ProductIdentity>()?;
+                    assert!(Arc::ptr_eq(
+                        &provider.identity,
+                        &state
+                            .catalog()
+                            .get_one::<aio_plugin_identity_server::IdentityService>()?
+                    ));
                     let authentication: Arc<dyn IdentityProvider> = provider.clone();
                     let authorization: Arc<dyn AuthorizationProvider> = provider.clone();
                     let metering: Arc<dyn MeteringProvider> = provider.clone();
@@ -83,9 +89,6 @@ async fn product_identity_pool_is_closed_on_shutdown_and_failed_startup() -> Res
         std::env::var("AIO_DATABASE_URL").as_deref() == Ok(database.as_str()),
         "身份插件需要同一测试库"
     );
-    let mut catalog = dill::Catalog::builder();
-    aio_plugin_identity_server::register(&mut catalog)?;
-    let identity = aio_plugin_identity_server::service(&catalog.build())?;
     let root = tempfile::tempdir()?;
     for fail in [false, true] {
         let observed = Arc::new(Mutex::new(Vec::new()));
@@ -100,7 +103,8 @@ async fn product_identity_pool_is_closed_on_shutdown_and_failed_startup() -> Res
             development: None,
         };
         let mut plugins: Vec<az_plugin_core::DynPlugin<RuntimeAssembly>> = vec![
-            Arc::new(ProductIdentityPlugin(identity.clone())),
+            Arc::new(crate::plugins::server::IdentityServicePlugin),
+            Arc::new(ProductIdentityPlugin),
             Arc::new(ObserveIdentity(observed.clone())),
         ];
         if fail {
@@ -136,6 +140,7 @@ async fn product_identity_pool_is_closed_on_shutdown_and_failed_startup() -> Res
             state.shutdown().await?;
         }
         assert!(provider.pool.is_closed());
+        assert_identity_closed(&provider).await?;
         assert!(!root.path().join("cache").exists());
     }
     Ok(())
@@ -164,12 +169,10 @@ async fn product_identity_restart_and_failed_replacement_create_fresh_pools() ->
         std::env::var("AIO_DATABASE_URL").as_deref() == Ok(database.as_str()),
         "身份插件需要同一测试库"
     );
-    let mut catalog = dill::Catalog::builder();
-    aio_plugin_identity_server::register(&mut catalog)?;
-    let identity = aio_plugin_identity_server::service(&catalog.build())?;
     let observed = Arc::new(Mutex::new(Vec::new()));
     let plugins: Vec<az_plugin_core::DynPlugin<RuntimeAssembly>> = vec![
-        Arc::new(ProductIdentityPlugin(identity.clone())),
+        Arc::new(crate::plugins::server::IdentityServicePlugin),
+        Arc::new(ProductIdentityPlugin),
         Arc::new(ObserveIdentity(observed.clone())),
     ];
     let root = tempfile::tempdir()?;
@@ -184,9 +187,10 @@ async fn product_identity_restart_and_failed_replacement_create_fresh_pools() ->
         development: None,
     };
     let host = RuntimeHost::initialize(config, plugins.clone()).await?;
-    host.restart::<ProductIdentityPlugin>().await?;
+    host.restart::<crate::plugins::server::IdentityServicePlugin>()
+        .await?;
     let mut rejected = plugins;
-    rejected[0] = Arc::new(ProductIdentityPlugin(identity));
+    rejected[0] = Arc::new(crate::plugins::server::IdentityServicePlugin);
     rejected.push(Arc::new(FailAfterIdentity));
     assert!(host.reconfigure(rejected).await.is_err());
     {
@@ -211,6 +215,40 @@ async fn product_identity_restart_and_failed_replacement_create_fresh_pools() ->
             .map_err(|_| anyhow::anyhow!("观察锁损坏"))?
             .iter()
             .all(|provider| provider.pool.is_closed())
+    );
+    let providers = observed
+        .lock()
+        .map_err(|_| anyhow::anyhow!("观察锁损坏"))?
+        .clone();
+    assert!(
+        providers
+            .windows(2)
+            .all(|pair| !Arc::ptr_eq(&pair[0].identity, &pair[1].identity))
+    );
+    for provider in providers {
+        assert_identity_closed(&provider).await?;
+    }
+    Ok(())
+}
+
+async fn assert_identity_closed(provider: &ProductIdentity) -> Result<()> {
+    let mut headers = axum::http::HeaderMap::new();
+    headers.insert(
+        axum::http::header::COOKIE,
+        "aio_session=lifecycle-closed-probe".parse()?,
+    );
+    let error = provider
+        .identity
+        .authenticate(&headers)
+        .await
+        .err()
+        .ok_or_else(|| anyhow::anyhow!("旧身份服务仍能访问数据库"))?;
+    assert!(
+        matches!(
+            error.downcast_ref::<sqlx::Error>(),
+            Some(sqlx::Error::PoolClosed)
+        ),
+        "{error:#}"
     );
     Ok(())
 }

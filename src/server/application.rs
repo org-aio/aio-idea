@@ -10,12 +10,7 @@ use axum::{
 };
 use az_plugin_host::runtime::server::{RuntimeState, bootstrap_document};
 
-pub(crate) fn router(
-    state: &RuntimeState,
-    runtime: Router,
-    catalog: &dill::Catalog,
-    web_dist: PathBuf,
-) -> Result<Router> {
+pub(crate) fn router(state: &RuntimeState, runtime: Router, web_dist: PathBuf) -> Result<Router> {
     let frame_policy = HeaderValue::from_str(&state.frame_policy())?;
     let static_files = az_plugin_host::static_files::application(web_dist).layer(
         axum::middleware::from_fn_with_state(state.clone(), bootstrap_document),
@@ -26,7 +21,6 @@ pub(crate) fn router(
     Ok(Router::new()
         .route("/health", get(|| async { "ok" }))
         .merge(runtime)
-        .merge(crate::plugins::server_router(catalog)?)
         .route("/api/{*path}", any(api_not_found))
         .fallback_service(application)
         .layer(axum::middleware::map_response(

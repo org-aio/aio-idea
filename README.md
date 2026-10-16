@@ -79,6 +79,8 @@ cargo run --no-default-features --features server
 
 本产品的静态插件装配由 `src/plugins/mod.rs` 维护，包含系统插件、账户入口和产品测试；通用 `aio plugin sync` 模板不能覆盖它。增加静态插件时同步 Cargo 依赖及 features、`aio.toml`、`.aio/plugins.lock` 和此装配入口，再验证既有目录与新增页面。设备助手的「云端文件」位于工作空间，使用当前账号查看同步版本及设备报告。
 
+服务端系统插件由 `src/plugins/server.rs` 接入平台 `RuntimeHost`，与 Rhai、TypeScript、MCP 和 gRPC 使用同一生命周期与 Dill 容器。部署配置可在线启停字典、文件、权限、租户和市场服务，或重建真实身份服务；停止关闭资源，恢复保留数据与会话。配置和验证方式见 [产品宿主装配](src/host/README.md)。系统实现仍随宿主编译，系统 UI 仍静态装配，尚未实现独立动态交付。
+
 `lib/dioxus-admin-workbench` 以 Git 子模块锁定完整版本，Cargo patch 将产品和静态扩展的基础 UI crates 统一到该版本，避免同名不同源码依赖造成 Rust 类型不一致。它是基础库，不是运行时业务插件；CI、容器构建前必须初始化子模块。
 
 `lib/dioxus-admin-workbench` is pinned as a Git submodule to a full version; a Cargo patch unifies the base UI crates of the product and its static extensions onto that version, preventing Rust type mismatches from same-name/different-source dependencies. It is a base library, not a runtime business plugin; CI and container builds must initialize the submodule first.

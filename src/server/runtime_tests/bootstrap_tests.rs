@@ -41,7 +41,7 @@ async fn bootstrap_revalidates_permissions_and_logout_before_304() -> Result<()>
             state.clone(),
             super::bootstrap_document,
         ));
-    let router = super::router(state.clone())
+    let router = super::router(state.clone())?
         .merge(aio_plugin_identity_server::router(&catalog)?)
         .merge(homepage);
     let server = tokio::spawn(async move { axum::serve(listener, router).await });

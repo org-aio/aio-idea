@@ -80,13 +80,12 @@ impl RuntimeBootstrap {
         mut self,
         config: HostConfig,
         plugins: Vec<DynPlugin<RuntimeAssembly>>,
-        identity: Arc<aio_plugin_identity_server::IdentityService>,
         compose: F,
     ) -> Result<(RuntimeHost, RuntimeComposition)>
     where
         F: Fn(&RuntimeState, Router) -> Result<Router> + Send + Sync + 'static,
     {
-        let plugins = select_plugins(&plugins, &identity, &Composition::default(), &self.selected);
+        let plugins = select_plugins(&plugins, &Composition::default(), &self.selected);
         let initialized =
             RuntimeHost::initialize_with_router(config, plugins.clone(), compose).await;
         let host = match initialized {
@@ -116,7 +115,6 @@ impl RuntimeBootstrap {
             applied: self.selected,
             observed: self.observed,
             plugins,
-            identity,
         };
         Ok((host, control))
     }

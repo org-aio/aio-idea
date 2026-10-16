@@ -74,7 +74,7 @@ async fn mounts_real_dioxus_binary_and_calls_component_over_browser_bridge() -> 
     .await?;
     let dist = std::path::PathBuf::from("target/dx/aio-idea/release/web/public");
     ensure!(dist.join("index.html").is_file(), "先构建 Web 宿主");
-    let router = super::router(state)
+    let router = super::router(state)?
         .merge(aio_plugin_identity_server::router(&catalog)?)
         .merge(aio_plugin_tenant_server::router(&catalog)?)
         .fallback_service(tower_http::services::ServeDir::new(&dist).fallback(

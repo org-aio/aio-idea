@@ -1,4 +1,6 @@
-// 产品拥有的静态插件装配；通用 CLI 模板不包含这里的系统插件和账户目录。
+// 产品拥有页面目录和原生系统插件选择；运行时负责服务资源与路由生命周期。
+#[cfg(feature = "server")]
+pub mod server;
 #[cfg(any(feature = "web", feature = "desktop"))]
 pub struct ClientCatalog {
     pub pages: Vec<az_dioxus_admin_shell::ApplicationPage>,
@@ -29,39 +31,6 @@ pub fn client_catalog() -> anyhow::Result<ClientCatalog> {
         account_items: az_dioxus_admin_shell::collect_application_account_items(&catalog)?,
         topbar_items: az_dioxus_admin_shell::collect_application_topbar_items(&catalog)?,
     })
-}
-
-#[cfg(feature = "server")]
-pub fn server_catalog() -> anyhow::Result<dill::Catalog> {
-    use anyhow::Context as _;
-    use dill::{Catalog, CatalogBuilder};
-
-    let mut builder = CatalogBuilder::new();
-    aio_plugin_dictionary_server::register(&mut builder)?;
-    aio_plugin_file_server::register(&mut builder)?;
-    aio_plugin_identity_server::register(&mut builder)?;
-    aio_plugin_marketplace_server::register(&mut builder)?;
-    aio_plugin_rbac_server::register(&mut builder)?;
-    aio_plugin_tenant_server::register(&mut builder)?;
-    builder.validate().context("校验服务端插件依赖图失败")?;
-    let catalog: Catalog = builder.build();
-    Ok(catalog)
-}
-
-#[cfg(feature = "server")]
-pub fn server_router(catalog: &dill::Catalog) -> anyhow::Result<axum::Router> {
-    use anyhow::Context as _;
-
-    let mut router = axum::Router::new();
-    router =
-        router.merge(aio_plugin_dictionary_server::router(catalog).context("装配字典插件失败")?);
-    router = router.merge(aio_plugin_file_server::router(catalog).context("装配文件插件失败")?);
-    router = router.merge(aio_plugin_identity_server::router(catalog).context("装配身份插件失败")?);
-    router =
-        router.merge(aio_plugin_marketplace_server::router(catalog).context("装配服务端插件失败")?);
-    router = router.merge(aio_plugin_rbac_server::router(catalog).context("装配权限插件失败")?);
-    router = router.merge(aio_plugin_tenant_server::router(catalog).context("装配租户插件失败")?);
-    Ok(router)
 }
 
 #[cfg(all(test, any(feature = "web", feature = "desktop")))]

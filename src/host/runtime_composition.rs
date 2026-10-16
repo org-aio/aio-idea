@@ -11,7 +11,10 @@ use az_plugin_host::runtime::server::plugins::{
 };
 use serde::{Deserialize, Serialize};
 
-use super::ProductIdentityPlugin;
+use crate::plugins::server::{
+    AccessControlPlugin, DictionaryPlugin, FilePlugin, IdentityServicePlugin, MarketplacePlugin,
+    TenantPlugin,
+};
 
 #[path = "runtime_bootstrap.rs"]
 mod bootstrap;
@@ -57,6 +60,16 @@ struct Composition {
     #[serde(default)]
     evolution: Capability,
     #[serde(default)]
+    dictionary: Capability,
+    #[serde(default)]
+    files: Capability,
+    #[serde(default)]
+    access_control: Capability,
+    #[serde(default)]
+    tenants: Capability,
+    #[serde(default)]
+    marketplace: Capability,
+    #[serde(default)]
     identity: Resource,
     #[serde(default)]
     database: Resource,
@@ -71,6 +84,11 @@ impl Default for Composition {
             mcp: Capability::default(),
             grpc: Capability::default(),
             evolution: Capability::default(),
+            dictionary: Capability::default(),
+            files: Capability::default(),
+            access_control: Capability::default(),
+            tenants: Capability::default(),
+            marketplace: Capability::default(),
             identity: Resource::default(),
             database: Resource::default(),
         }
@@ -82,7 +100,6 @@ pub struct RuntimeComposition {
     path: Option<PathBuf>,
     applied: Composition,
     plugins: Vec<DynPlugin<RuntimeAssembly>>,
-    identity: Arc<aio_plugin_identity_server::IdentityService>,
     observed: Option<String>,
     journal: Option<ConfigurationJournal>,
 }
@@ -100,8 +117,7 @@ impl RuntimeComposition {
         let result = async {
             let selected = parse(&bytes)?;
             if selected != self.applied {
-                let plugins =
-                    select_plugins(&self.plugins, &self.identity, &self.applied, &selected);
+                let plugins = select_plugins(&self.plugins, &self.applied, &selected);
                 host.reconfigure(plugins.clone()).await?;
                 self.plugins = plugins;
                 self.applied = selected;
@@ -157,7 +173,6 @@ impl RuntimeComposition {
 
 fn select_plugins(
     current: &[DynPlugin<RuntimeAssembly>],
-    identity: &Arc<aio_plugin_identity_server::IdentityService>,
     previous: &Composition,
     next: &Composition,
 ) -> Vec<DynPlugin<RuntimeAssembly>> {
@@ -177,8 +192,28 @@ fn select_plugins(
         &next.evolution,
         EvolutionPlugin,
     );
+    select(
+        &mut plugins,
+        &previous.dictionary,
+        &next.dictionary,
+        DictionaryPlugin,
+    );
+    select(&mut plugins, &previous.files, &next.files, FilePlugin);
+    select(
+        &mut plugins,
+        &previous.access_control,
+        &next.access_control,
+        AccessControlPlugin,
+    );
+    select(&mut plugins, &previous.tenants, &next.tenants, TenantPlugin);
+    select(
+        &mut plugins,
+        &previous.marketplace,
+        &next.marketplace,
+        MarketplacePlugin,
+    );
     if previous.identity != next.identity {
-        replace(&mut plugins, ProductIdentityPlugin(identity.clone()));
+        replace(&mut plugins, IdentityServicePlugin);
     }
     if previous.database != next.database {
         replace(&mut plugins, DatabasePlugin);

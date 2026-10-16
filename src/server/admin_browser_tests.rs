@@ -1,5 +1,4 @@
 use anyhow::{Context, Result, ensure};
-use axum::Router;
 use tower_http::services::{ServeDir, ServeFile};
 
 #[tokio::test]
@@ -16,39 +15,41 @@ async fn system_management_browser_workflows() -> Result<()> {
         std::env::var("AIO_DATABASE_URL")? == database,
         "数据库必须一致"
     );
-    let catalog = crate::plugins::server_catalog()?;
-    let identity = aio_plugin_identity_server::service(&catalog)?;
-    identity.initialize().await?;
-    aio_plugin_file_server::service(&catalog)?
-        .initialize()
-        .await?;
-    aio_plugin_dictionary_server::service(&catalog)?
-        .initialize()
-        .await?;
-    aio_plugin_rbac_server::service(&catalog)?
-        .initialize()
-        .await?;
     let dist = std::path::Path::new("target/dx/aio-idea/release/web/public");
     ensure!(dist.join("index.html").is_file(), "先构建 Web 壳");
     let port = std::env::var("AIO_ADMIN_PREVIEW_PORT").unwrap_or_else(|_| "0".into());
     let listener = tokio::net::TcpListener::bind(format!("127.0.0.1:{port}")).await?;
     let base = format!("http://{}", listener.local_addr()?);
     let temporary = tempfile::tempdir()?;
-    let runtime = az_plugin_host::runtime::server::RuntimeState::isolated_admin_test(
-        std::sync::Arc::new(crate::host::ProductIdentity::new(identity, &database)?),
-        &database,
-        &base,
-        temporary.path(),
+    let config = az_plugin_host::configuration::HostConfig {
+        database_url: database.clone(),
+        public_origin: base.clone(),
+        cache_root: temporary.path().join("cache"),
+        component_storage: None,
+        default_plugins: vec![],
+        delivery: None,
+        development: None,
+        remote_capabilities: None,
+    };
+    let mut plugins = az_plugin_host::runtime::server::plugins::default_plugins()?;
+    plugins.extend(crate::plugins::server::server_plugins()?);
+    plugins.push(std::sync::Arc::new(crate::host::ProductIdentityPlugin));
+    let runtime = az_plugin_host::runtime::server::plugins::RuntimeHost::initialize_with_router(
+        config,
+        plugins,
+        move |_, router| {
+            Ok(router.fallback_service(
+                ServeDir::new(dist).fallback(ServeFile::new(dist.join("index.html"))),
+            ))
+        },
     )
     .await?;
-    let router = Router::new()
-        .merge(crate::plugins::server_router(&catalog)?)
-        .merge(az_plugin_host::runtime::server::router(runtime))
-        .fallback_service(ServeDir::new(dist).fallback(ServeFile::new(dist.join("index.html"))));
+    let router = runtime.router();
     println!("Isolated admin preview: {base}");
     let server = tokio::spawn(async move { axum::serve(listener, router).await });
     if port != "0" {
         let result = server.await?;
+        runtime.shutdown().await?;
         result?;
         return Ok(());
     }
@@ -71,6 +72,7 @@ async fn system_management_browser_workflows() -> Result<()> {
     }
     server.abort();
     let _ = server.await;
+    runtime.shutdown().await?;
     let pool = sqlx::PgPool::connect(&database).await?;
     let tenants = sqlx::query_scalar::<_, String>("SELECT id FROM tenants WHERE label LIKE $1")
         .bind(format!("{test_run}%"))
