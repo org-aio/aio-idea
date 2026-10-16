@@ -110,7 +110,7 @@ fn publish_account_allowed(configured: Option<&str>, account: &str) -> bool {
 }
 
 /// 现有产品服务贡献身份、授权与计费接口；连接池跟随宿主生命周期关闭。
-pub struct ProductIdentityPlugin(pub Arc<ProductIdentity>);
+pub struct ProductIdentityPlugin(pub Arc<aio_plugin_identity_server::IdentityService>);
 
 impl az_plugin_core::Plugin<az_plugin_host::runtime::server::plugins::RuntimeAssembly>
     for ProductIdentityPlugin
@@ -120,9 +120,11 @@ impl az_plugin_core::Plugin<az_plugin_host::runtime::server::plugins::RuntimeAss
         assembly: &'a mut az_plugin_host::runtime::server::plugins::RuntimeAssembly,
     ) -> az_plugin_core::PluginFuture<'a> {
         Box::pin(async move {
+            use az_plugin_host::runtime::server::plugins::Resource;
+            assembly.services.add_builder(self.0.clone());
+            assembly.declare_resource::<ProductIdentity>()?;
             assembly
                 .services
-                .add_builder(self.0.clone())
                 .bind::<dyn IdentityProvider, ProductIdentity>()
                 .bind::<dyn AuthorizationProvider, ProductIdentity>()
                 .bind::<dyn MeteringProvider, ProductIdentity>();
@@ -131,14 +133,25 @@ impl az_plugin_core::Plugin<az_plugin_host::runtime::server::plugins::RuntimeAss
             assembly.require_service::<dyn MeteringProvider>();
             assembly.on_initialize::<Self>(|state, _| {
                 Box::pin(async move {
-                    let provider = state.service::<ProductIdentity>()?;
+                    let provider = Arc::new(ProductIdentity::new(
+                        state.service::<aio_plugin_identity_server::IdentityService>()?,
+                        &state.config.database_url,
+                    )?);
+                    // 先交给资源槽，连接验证失败时也由停止钩子关闭本次创建的池。
+                    state
+                        .service::<Resource<ProductIdentity>>()?
+                        .provide(provider.clone())?;
                     sqlx::query("SELECT 1").execute(&provider.pool).await?;
                     Ok(())
                 })
             });
             assembly.on_stop::<Self>(|state, _| {
                 Box::pin(async move {
-                    state.service::<ProductIdentity>()?.pool.close().await;
+                    if let Some(provider) =
+                        state.service::<Resource<ProductIdentity>>()?.initialized()
+                    {
+                        provider.pool.close().await;
+                    }
                     Ok(())
                 })
             });

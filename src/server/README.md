@@ -20,10 +20,12 @@
 | 入口 | 调用方式 |
 | --- | --- |
 | MCP | `/api/runtime/mcp`，Streamable HTTP；工具名 `v1.math.add` 对应 `/v1/math/add` |
-| gRPC | 同一宿主 HTTP/2 监听地址，`aio.runtime.v1.Enhancements/List` 与 `Invoke` |
+| gRPC | 同一宿主 HTTP/2 监听地址，`aio.runtime.v1.Enhancements/List`、`Describe` 与 `Invoke` |
 | Sidecar | 受监督进程通过宿主 broker 调用清单授予的增强路径 |
 
-MCP/gRPC 当前提供运行时增强的发现和执行；不包含外部服务导入、流式 RPC 或 AI 自动激活策略。完整能力边界见 [平台验收清单](https://github.com/org-aio/aio-platform/blob/main/docs/plugin/everything-as-plugin.md)。
+MCP/gRPC 提供运行时增强的发现、契约描述和执行。产品的 `remote` feature 还将部署方声明的外部 MCP HTTP/stdio 工具与 unary gRPC 方法导入同一能力目录，供 Rhai/TypeScript 按权限调用；部署文件支持在线替换，候选失败保留旧绑定。MCP stdio 是受信任本机程序的连接方式，进程隔离仍由 Sidecar 提供。流式 RPC、MCP 交互/后台任务及 macOS/Windows stdio 运行验收尚未完成。
+
+默认组合包含脚本演进控制插件，可按明确授权验证、激活、观察和回滚候选；产品没有配置默认模型或无人值守调度。原生插件在线组合由平台 `RuntimeHost` 提供，产品当前仍使用固定组合的 `RuntimeState`。完整能力边界见 [平台验收清单](https://github.com/org-aio/aio-platform/blob/main/docs/plugin/everything-as-plugin.md)。
 
 基础验证：
 
@@ -34,3 +36,5 @@ cargo check --locked --no-default-features --features web --target wasm32-unknow
 ```
 
 真实协议验收使用独立本机数据库、空默认插件组合、临时文件/密钥/组件存储，以及不存在的独立监督器 socket。启动正式服务端二进制后登录测试账号，提交并激活同时包含 Rhai 与 TypeScript 的候选包；通过 MCP 与生成契约的 gRPC 客户端核对结果及版本，再发 SIGTERM，确认正常退出并释放端口。身份启动快照与跨租户前端票据另由 `runtime_tests` 中的隔离 HTTP 测试验证；测试配置不得连接现役监督器或生产数据库。
+
+外部协议验收使用真实 MCP stdio 子进程，分别经 MCP HTTP 和 gRPC 调用两种脚本语言，覆盖角色撤权、命令在线替换、无效候选保留旧版、停用与恢复、宿主重启后的版本恢复、退出登录及进程组回收。身份提供者的连接池重启与失败恢复由 `host::identity::lifecycle_tests` 使用独立 PostgreSQL 验证。

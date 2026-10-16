@@ -13,3 +13,7 @@ Rhai 与 TypeScript 通过统一 `call_capability` 使用这些能力，仍要�
 默认组合提供独立 `EvolutionPlugin`，把候选、激活、回滚、观察及审计接到脚本能力层。`ProductIdentity::session_has_permissions` 在同一次 SQL 查询中检查当前会话、租户成员和全部所需角色权限；生成或验证后的提交重新查询，不沿用调用开始时的授权。管理员仍需逐项配置 `runtime:/v1/runtime/enhancements/...`，已有 `plugin:manage` 不自动获得这些能力。
 
 双语言策略和安装示例在平台 `docs/plugin/evolution/`。模型能力独立提供；此产品没有配置默认模型、自动批准或后台演进调度。调用计数按租户、版本和激活代数持久化，源码回滚不包含业务数据回滚。
+
+`ProductIdentityPlugin` 保存产品身份 Service 的引用，在每次 `on_initialize` 中新建自己拥有的连接池，再将同一个 `ProductIdentity` 绑定到身份、授权和计费接口。停止和部分初始化失败均关闭本次创建的池；配方可以由平台 `RuntimeHost` 重放，不会复用已关闭的池。`identity_tests` 使用真实 PostgreSQL 验证三接口同实例、重启、失败恢复和最终关闭。
+
+当前 `server.rs` 仍采用固定组合的 `RuntimeState::initialize`，没有向 HTTP 开放原生插件的安装/卸载/重启接口。平台已提供在线组合 API；产品系统服务的动态交付、会话迁移和独立恢复入口仍需继续接入。源代码升级和隔离环境验收不代表生产宿主已经替换。

@@ -44,10 +44,6 @@ pub async fn run() -> Result<()> {
         .initialize()
         .await?;
     let config = crate::host::configuration()?;
-    let identity = std::sync::Arc::new(crate::host::ProductIdentity::new(
-        identity,
-        &config.database_url,
-    )?);
     let mut runtime_plugins = runtime::server::plugins::default_plugins()?;
     runtime_plugins.push(std::sync::Arc::new(crate::host::ProductIdentityPlugin(
         identity,
