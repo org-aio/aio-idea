@@ -4,18 +4,13 @@ use std::{
     path::PathBuf,
 };
 
-use anyhow::{Context as _, Result};
-use axum::{
-    Json, Router,
-    http::{HeaderValue, StatusCode, header},
-    routing::{any, get},
-};
-
 use crate::plugins;
+use anyhow::{Context as _, Result};
 use az_plugin_host::runtime;
 
 #[cfg(test)]
 mod admin_browser_tests;
+pub(crate) mod application;
 #[cfg(test)]
 mod runtime_tests;
 
@@ -46,10 +41,18 @@ pub async fn run() -> Result<()> {
     let config = crate::host::configuration()?;
     let mut runtime_plugins = runtime::server::plugins::default_plugins()?;
     runtime_plugins.push(std::sync::Arc::new(crate::host::ProductIdentityPlugin(
-        identity,
+        identity.clone(),
     )));
-    let runtime = runtime::server::RuntimeState::initialize(config, runtime_plugins).await?;
-    let result = serve(&runtime, &plugin_catalog, web_dist, host, port).await;
+    let composition = crate::host::RuntimeComposition::load(runtime_plugins, identity).await?;
+    let runtime = runtime::server::plugins::RuntimeHost::initialize_with_router(
+        config,
+        composition.plugins(),
+        move |state, runtime| {
+            application::router(state, runtime, &plugin_catalog, web_dist.clone())
+        },
+    )
+    .await?;
+    let result = serve(&runtime, composition, host, port).await;
     let cleanup = runtime.shutdown().await;
     match (result, cleanup) {
         (Err(error), Err(cleanup)) => Err(error.context(format!("运行时清理失败: {cleanup:#}"))),
@@ -59,34 +62,12 @@ pub async fn run() -> Result<()> {
 }
 
 async fn serve(
-    runtime: &runtime::server::RuntimeState,
-    plugin_catalog: &dill::Catalog,
-    web_dist: PathBuf,
+    runtime: &runtime::server::plugins::RuntimeHost,
+    composition: crate::host::RuntimeComposition,
     host: IpAddr,
     port: u16,
 ) -> Result<()> {
-    let frame_policy = HeaderValue::from_str(&runtime.frame_policy())?;
-    let application = az_plugin_host::static_files::application(web_dist).layer(
-        axum::middleware::from_fn_with_state(runtime.clone(), runtime::server::bootstrap_document),
-    );
-    let router = Router::new()
-        .route("/health", get(|| async { "ok" }))
-        .merge(runtime::server::router(runtime.clone()))
-        .merge(plugins::server_router(plugin_catalog)?)
-        .route("/api/{*path}", any(api_not_found))
-        .fallback_service(application)
-        .layer(axum::middleware::map_response(
-            move |mut response: axum::response::Response| {
-                let frame_policy = frame_policy.clone();
-                async move {
-                    // 账户页面只允许本站及部署声明的局域网隔离文档。
-                    response
-                        .headers_mut()
-                        .append(header::CONTENT_SECURITY_POLICY, frame_policy);
-                    response
-                }
-            },
-        ));
+    let router = runtime.router();
     let address = SocketAddr::from((host, port));
     let listener = tokio::net::TcpListener::bind(address)
         .await
@@ -98,6 +79,7 @@ async fn serve(
             result.context("AIO IDEA 服务异常退出")
         }
         result = shutdown_signal() => result,
+        result = composition.watch(runtime.clone()) => result,
     }
 }
 
@@ -116,11 +98,4 @@ async fn shutdown_signal() -> Result<()> {
     }
     #[cfg(not(unix))]
     tokio::signal::ctrl_c().await.context("等待退出信号失败")
-}
-
-async fn api_not_found() -> (StatusCode, Json<serde_json::Value>) {
-    (
-        StatusCode::NOT_FOUND,
-        Json(serde_json::json!({ "error": "API 路由不存在" })),
-    )
 }

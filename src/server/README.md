@@ -9,7 +9,7 @@
 
 # 运行时退出
 
-产品使用平台默认插件组合，Rhai/TypeScript 增强、Sidecar、MCP 和 gRPC 共享同一运行时权限和版本服务。SIGTERM、Ctrl-C 或监听失败会进入 `RuntimeState::shutdown`，等待已进入的有限工作完成并反序释放资源。发布或进程重启不删除持久化安装及活动版本；不能从源码更新推断现役服务已经升级。
+产品使用平台默认插件组合，Rhai/TypeScript 增强、Sidecar、MCP 和 gRPC 共享同一运行时权限和版本服务。SIGTERM、Ctrl-C、监听失败或组合恢复失败会进入 `RuntimeHost::shutdown`，等待已进入的有限工作完成并反序释放资源。发布或进程重启不删除持久化安装及活动版本；不能从源码更新推断现役服务已经升级。
 
 产品的 `server` feature 显式启用平台的 `server`、`wasm` 和 `sidecar`，保留完整插件运行能力。平台精简宿主可仅启用 `server` 提供 MCP/gRPC 与外部执行器，不再编译 Wasmtime；编译选择与 Dill 运行时装配分别决定可用实现和实际启动的插件。
 
@@ -25,7 +25,7 @@
 
 MCP/gRPC 提供运行时增强的发现、契约描述和执行。产品的 `remote` feature 还将部署方声明的外部 MCP HTTP/stdio 工具与 unary gRPC 方法导入同一能力目录，供 Rhai/TypeScript 按权限调用；部署文件支持在线替换，候选失败保留旧绑定。MCP stdio 是受信任本机程序的连接方式，进程隔离仍由 Sidecar 提供。流式 RPC、MCP 交互/后台任务及 macOS/Windows stdio 运行验收尚未完成。
 
-默认组合包含脚本演进控制插件，可按明确授权验证、激活、观察和回滚候选；产品没有配置默认模型或无人值守调度。原生插件在线组合由平台 `RuntimeHost` 提供，产品当前仍使用固定组合的 `RuntimeState`。完整能力边界见 [平台验收清单](https://github.com/org-aio/aio-platform/blob/main/docs/plugin/everything-as-plugin.md)。
+默认组合包含脚本演进控制插件，可按明确授权验证、激活、观察和回滚候选；产品没有配置默认模型或无人值守调度。产品的 `RuntimeHost` 接收部署方原生组合文件，实现协议和语言启停，以及身份适配器、数据库的依赖重建；配置说明见 [产品宿主装配](../host/README.md)。完整能力边界见 [平台验收清单](https://github.com/org-aio/aio-platform/blob/main/docs/plugin/everything-as-plugin.md)。
 
 基础验证：
 
