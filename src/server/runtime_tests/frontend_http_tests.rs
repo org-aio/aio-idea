@@ -153,7 +153,7 @@ async fn exercise(
         StatusCode::OK
     );
     let script = state
-        .repository
+        .service::<super::test_support::RepositoryInstaller>()?
         .artifact(&first.rev, "dist/web/assets/app.js")?;
     tokio::fs::write(&script, b"modified").await?;
     assert_eq!(
@@ -187,7 +187,7 @@ async fn exercise(
     sqlx::query("UPDATE plugin_revisions SET pages=$1 WHERE source_id=$2")
         .bind(expired_permission)
         .bind(&page_id)
-        .execute(state.database())
+        .execute(&state.database()?)
         .await?;
     assert_eq!(
         client.get(format!("{base}{src}")).send().await?.status(),
@@ -214,10 +214,10 @@ async fn exercise(
     sqlx::query("UPDATE plugin_revisions SET pages=$1 WHERE source_id=$2")
         .bind(&pages)
         .bind(&page_id)
-        .execute(state.database())
+        .execute(&state.database()?)
         .await?;
     state
-        .store
+        .service::<PluginStore>()?
         .set_enabled(&session.tenant_id, &page_id, false, None)
         .await?;
     assert_eq!(
@@ -225,7 +225,7 @@ async fn exercise(
         StatusCode::NOT_FOUND
     );
     state
-        .store
+        .service::<PluginStore>()?
         .set_enabled(&session.tenant_id, &page_id, true, None)
         .await?;
     assert_eq!(
@@ -270,13 +270,28 @@ async fn exercise(
     let other_tenant = format!("frontend-tenant-{}", uuid::Uuid::new_v4().simple());
     sqlx::query("INSERT INTO tenants (id,label) VALUES ($1,'Frontend Other')")
         .bind(&other_tenant)
-        .execute(state.database())
+        .execute(&state.database()?)
         .await?;
-    sqlx::query("UPDATE auth_sessions SET tenant_id=$1 WHERE id=$2")
+    // 用有效的租户切换验证旧挂载的隔离，避免无成员资格的会话提前失效。
+    sqlx::query("INSERT INTO tenant_memberships (tenant_id, user_id, display_name) VALUES ($1, $2, 'Frontend Other')")
         .bind(&other_tenant)
-        .bind(&session.session_id)
-        .execute(state.database())
+        .bind(&session.user_id)
+        .execute(&state.database()?)
         .await?;
+    let original_session = identity
+        .authenticate(&headers)
+        .await?
+        .context("原租户会话无效")?;
+    assert!(
+        identity
+            .switch_tenant(&original_session, &other_tenant)
+            .await?
+    );
+    let switched_session = identity
+        .authenticate(&headers)
+        .await?
+        .context("切换后的会话无效")?;
+    assert_eq!(switched_session.tenant_id, other_tenant);
     assert_eq!(
         client
             .get(format!(
@@ -288,16 +303,23 @@ async fn exercise(
             .status(),
         StatusCode::FORBIDDEN
     );
-    sqlx::query("UPDATE auth_sessions SET tenant_id=$1 WHERE id=$2")
-        .bind(&session.tenant_id)
-        .bind(&session.session_id)
-        .execute(state.database())
+    assert!(
+        identity
+            .switch_tenant(&switched_session, &session.tenant_id)
+            .await?
+    );
+    sqlx::query("DELETE FROM tenant_memberships WHERE tenant_id=$1")
+        .bind(&other_tenant)
+        .execute(&state.database()?)
         .await?;
     sqlx::query("DELETE FROM tenants WHERE id=$1")
         .bind(other_tenant)
-        .execute(state.database())
+        .execute(&state.database()?)
         .await?;
-    state.store.uninstall(&session.tenant_id, &page_id).await?;
+    state
+        .service::<PluginStore>()?
+        .uninstall(&session.tenant_id, &page_id)
+        .await?;
     assert_eq!(
         client
             .get(format!(
@@ -325,7 +347,10 @@ async fn exercise(
             .status(),
         StatusCode::UNAUTHORIZED
     );
-    state.store.uninstall(&session.tenant_id, &page_id).await?;
+    state
+        .service::<PluginStore>()?
+        .uninstall(&session.tenant_id, &page_id)
+        .await?;
     Ok(())
 }
 
@@ -376,7 +401,7 @@ async fn activate(
     state.cache_test_package(package).await?;
     let verified = package.verify()?;
     state
-        .store
+        .service::<PluginStore>()?
         .activate(
             tenant,
             DiscoveredPlugin {

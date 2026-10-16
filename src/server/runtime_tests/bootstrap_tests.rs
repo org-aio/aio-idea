@@ -54,7 +54,7 @@ async fn exercise(
     identity: &aio_plugin_identity_server::IdentityService,
 ) -> Result<()> {
     sqlx::query("INSERT INTO role_permissions (tenant_id, role_id, permission) VALUES ('default', 'platform-admin', 'plugin:manage') ON CONFLICT DO NOTHING")
-        .execute(state.database()).await?;
+        .execute(&state.database()?).await?;
     let client = Client::new();
     let url = format!("{base}/api/runtime/bootstrap");
     let anonymous = client
@@ -143,7 +143,7 @@ async fn exercise(
     sqlx::query(
         "DELETE FROM role_permissions WHERE tenant_id='default' AND permission='plugin:manage'",
     )
-    .execute(state.database())
+    .execute(&state.database()?)
     .await?;
     let changed = client
         .get(&url)
@@ -174,10 +174,10 @@ async fn exercise(
     let tenant = format!("startup-{}", uuid::Uuid::new_v4());
     sqlx::query("INSERT INTO tenants (id, label) VALUES ($1, 'Startup B')")
         .bind(&tenant)
-        .execute(state.database())
+        .execute(&state.database()?)
         .await?;
     sqlx::query("INSERT INTO tenant_memberships (tenant_id, user_id, display_name) VALUES ($1, $2, 'Startup B')")
-        .bind(&tenant).bind(&session.user_id).execute(state.database()).await?;
+        .bind(&tenant).bind(&session.user_id).execute(&state.database()?).await?;
     assert!(identity.switch_tenant(&session, &tenant).await?);
     let switched = client
         .get(&url)
@@ -229,13 +229,13 @@ async fn exercise(
     );
     sqlx::query("DELETE FROM tenant_memberships WHERE tenant_id=$1")
         .bind(&tenant)
-        .execute(state.database())
+        .execute(&state.database()?)
         .await?;
     sqlx::query("DELETE FROM tenants WHERE id=$1")
         .bind(&tenant)
-        .execute(state.database())
+        .execute(&state.database()?)
         .await?;
     sqlx::query("INSERT INTO role_permissions (tenant_id, role_id, permission) VALUES ('default', 'platform-admin', 'plugin:manage') ON CONFLICT DO NOTHING")
-        .execute(state.database()).await?;
+        .execute(&state.database()?).await?;
     Ok(())
 }

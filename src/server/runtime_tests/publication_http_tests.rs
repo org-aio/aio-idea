@@ -199,13 +199,13 @@ async fn exercise_http(
     active_revision(&client, base, &cookie, &first.rev).await?;
     assert!(
         state
-            .repository
+            .service::<super::test_support::RepositoryInstaller>()?
             .artifact(&first.rev, "dist/pages.json")?
             .is_file()
     );
     assert_eq!(
         state
-            .store
+            .service::<PluginStore>()?
             .published_marketplace_entry(&git, None)
             .await?
             .context("缺少市场当前发布版本")?

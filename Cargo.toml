@@ -5,7 +5,7 @@ edition = "2024"
 license = "MIT OR Apache-2.0"
 
 [dependencies]
-az-plugin-host = { git = "https://github.com/org-aio/aio-platform.git", rev = "12e88317e253fd4d5af4b1d543365e8e9305f36d", default-features = false }
+az-plugin-host = { git = "https://github.com/org-aio/aio-platform.git", rev = "3578e63586d0da833424f907aa389d6f33b90c3b", default-features = false }
 anyhow = "1.0.99"
 async-trait = { version = "0.1", optional = true }
 axum = { version = "0.8.6", optional = true }
@@ -17,7 +17,7 @@ gloo-net = { version = "0.6.0", features = ["http", "json"], optional = true }
 serde = { version = "1.0.228", features = ["derive"] }
 serde_json = "1.0.145"
 sqlx = { version = "0.8.6", default-features = false, features = ["postgres", "runtime-tokio-rustls", "json"], optional = true }
-tokio = { version = "1.47.1", features = ["fs", "macros", "net", "process", "rt-multi-thread", "sync", "time"], optional = true }
+tokio = { version = "1.47.1", features = ["fs", "macros", "net", "process", "rt-multi-thread", "signal", "sync", "time"], optional = true }
 toml = { version = "0.9.5", optional = true }
 aio_plugin_account = { package = "aio-plugin-account", git = "https://github.com/zjarlin/aio-plugin-account.git", rev = "b6e6c561397e60fba1a1a9832ded783b19969506", optional = true }
 aio_plugin_dictionary_client = { package = "aio-plugin-dictionary-client", git = "https://github.com/zjarlin/aio-plugin-dictionary.git", rev = "75e9292488fe64bc75f87bf73cd7db6be90828ce", optional = true }
@@ -49,9 +49,9 @@ server = ["az-plugin-host/server", "dep:async-trait","dep:axum", "dep:sqlx", "de
 unsafe_code = "forbid"
 
 [dev-dependencies]
-az-plugin-host = { git = "https://github.com/org-aio/aio-platform.git", rev = "12e88317e253fd4d5af4b1d543365e8e9305f36d", default-features = false, features = ["test-support"] }
+az-plugin-host = { git = "https://github.com/org-aio/aio-platform.git", rev = "3578e63586d0da833424f907aa389d6f33b90c3b", default-features = false, features = ["test-support"] }
 tempfile = "3.23.0"
-az-plugin-package = { git = "https://github.com/org-aio/aio-platform.git", rev = "12e88317e253fd4d5af4b1d543365e8e9305f36d" }
+az-plugin-package = { git = "https://github.com/org-aio/aio-platform.git", rev = "3578e63586d0da833424f907aa389d6f33b90c3b" }
 kuchikiki = { version = "=0.8.8-speedreader" }
 reqwest = { version = "0.12.23", default-features = false, features = ["json", "rustls-tls", "stream"] }
 tower-http = { version = "0.6.2", features = ["fs", "compression-gzip"] }

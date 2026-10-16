@@ -48,14 +48,30 @@ pub async fn run() -> Result<()> {
         crate::host::ProductIdentity::new(identity, &config.database_url).await?,
     );
     let runtime = runtime::server::RuntimeState::initialize(config, identity).await?;
+    let result = serve(&runtime, &plugin_catalog, web_dist, host, port).await;
+    let cleanup = runtime.shutdown().await;
+    match (result, cleanup) {
+        (Err(error), Err(cleanup)) => Err(error.context(format!("运行时清理失败: {cleanup:#}"))),
+        (Err(error), Ok(())) => Err(error),
+        (Ok(()), cleanup) => cleanup,
+    }
+}
+
+async fn serve(
+    runtime: &runtime::server::RuntimeState,
+    plugin_catalog: &dill::Catalog,
+    web_dist: PathBuf,
+    host: IpAddr,
+    port: u16,
+) -> Result<()> {
     let frame_policy = HeaderValue::from_str(&runtime.frame_policy())?;
     let application = az_plugin_host::static_files::application(web_dist).layer(
         axum::middleware::from_fn_with_state(runtime.clone(), runtime::server::bootstrap_document),
     );
     let router = Router::new()
         .route("/health", get(|| async { "ok" }))
-        .merge(runtime::server::router(runtime))
-        .merge(plugins::server_router(&plugin_catalog)?)
+        .merge(runtime::server::router(runtime.clone()))
+        .merge(plugins::server_router(plugin_catalog)?)
         .route("/api/{*path}", any(api_not_found))
         .fallback_service(application)
         .layer(axum::middleware::map_response(
@@ -75,9 +91,30 @@ pub async fn run() -> Result<()> {
         .await
         .with_context(|| format!("绑定监听地址失败: {address}"))?;
     println!("AIO IDEA listening on http://{}", listener.local_addr()?);
-    axum::serve(listener, router)
-        .await
-        .context("AIO IDEA 服务异常退出")
+    use std::future::IntoFuture;
+    tokio::select! {
+        result = axum::serve(listener, router).into_future() => {
+            result.context("AIO IDEA 服务异常退出")
+        }
+        result = shutdown_signal() => result,
+    }
+}
+
+// SIGTERM 与 Ctrl-C 都先停止监听，再等待运行时任务和资源释放。
+async fn shutdown_signal() -> Result<()> {
+    #[cfg(unix)]
+    {
+        let mut terminate =
+            tokio::signal::unix::signal(tokio::signal::unix::SignalKind::terminate())
+                .context("注册终止信号失败")?;
+        tokio::select! {
+            signal = tokio::signal::ctrl_c() => signal.context("等待退出信号失败")?,
+            _ = terminate.recv() => {},
+        }
+        Ok(())
+    }
+    #[cfg(not(unix))]
+    tokio::signal::ctrl_c().await.context("等待退出信号失败")
 }
 
 async fn api_not_found() -> (StatusCode, Json<serde_json::Value>) {
