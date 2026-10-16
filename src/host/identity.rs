@@ -36,6 +36,17 @@ impl IdentityProvider for ProductIdentity {
     async fn session_active(&self, session: &str, tenant: &str, user: &str) -> Result<bool> {
         Ok(sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM auth_sessions WHERE id=$1 AND tenant_id=$2 AND user_id=$3 AND expires_at>now())").bind(session).bind(tenant).bind(user).fetch_one(&self.pool).await?)
     }
+    async fn session_has_permissions(
+        &self,
+        session: &str,
+        tenant: &str,
+        user: &str,
+        permissions: &[String],
+    ) -> Result<bool> {
+        // 演进提交读取当前会话与角色关系，不沿用模型生成之前的权限快照。
+        Ok(sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM auth_sessions s JOIN tenant_memberships m ON m.tenant_id=s.tenant_id AND m.user_id=s.user_id JOIN tenant_member_roles r ON r.tenant_id=m.tenant_id AND r.user_id=m.user_id JOIN role_permissions p ON p.tenant_id=r.tenant_id AND p.role_id=r.role_id WHERE s.id=$1 AND s.tenant_id=$2 AND s.user_id=$3 AND s.expires_at>now() AND p.permission=ANY($4) GROUP BY s.id HAVING count(DISTINCT p.permission)=cardinality($4::text[]))")
+            .bind(session).bind(tenant).bind(user).bind(permissions).fetch_one(&self.pool).await?)
+    }
     async fn meter(
         &self,
         tenant: &str,

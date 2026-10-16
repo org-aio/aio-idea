@@ -9,3 +9,7 @@
 正式宿主就绪后自动观察配置和 gRPC 描述文件；原子替换部署文件即可在线添加、更新或停用绑定，空 imports 可从零启动。完整候选校验成功后原子切换，失败保留旧版；同一脚本调用链固定使用同一能力快照。修改已有路径的契约需要新版本路径，凭据环境变量值的轮换仍需重启。
 
 Rhai 与 TypeScript 通过统一 `call_capability` 使用这些能力，仍要求显式 `runtime:<path>` 授权。配置格式、描述文件示例与边界见平台 `lib/plugin/host/src/runtime/server/remote/README.md`。
+
+默认组合提供独立 `EvolutionPlugin`，把候选、激活、回滚、观察及审计接到脚本能力层。`ProductIdentity::session_has_permissions` 在同一次 SQL 查询中检查当前会话、租户成员和全部所需角色权限；生成或验证后的提交重新查询，不沿用调用开始时的授权。管理员仍需逐项配置 `runtime:/v1/runtime/enhancements/...`，已有 `plugin:manage` 不自动获得这些能力。
+
+双语言策略和安装示例在平台 `docs/plugin/evolution/`。模型能力独立提供；此产品没有配置默认模型、自动批准或后台演进调度。调用计数按租户、版本和激活代数持久化，源码回滚不包含业务数据回滚。
