@@ -19,10 +19,18 @@ fn main() {
 #[cfg(feature = "server")]
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
-    if std::env::args().nth(1).as_deref() == Some("supervisor") {
-        return az_plugin_host::runtime::server::run_supervisor().await;
+    let arguments: Vec<_> = std::env::args().skip(1).collect();
+    match arguments
+        .iter()
+        .map(String::as_str)
+        .collect::<Vec<_>>()
+        .as_slice()
+    {
+        [] => server::run().await,
+        ["supervisor"] => az_plugin_host::runtime::server::run_supervisor().await,
+        ["runtime", command] => host::runtime_command(command),
+        _ => anyhow::bail!("用法: aio-idea [supervisor | runtime status|retry|restore]"),
     }
-    server::run().await
 }
 
 #[cfg(any(feature = "web", feature = "desktop"))]

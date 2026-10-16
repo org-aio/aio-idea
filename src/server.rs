@@ -26,6 +26,13 @@ pub async fn run() -> Result<()> {
     let web_dist = env::var_os("AIO_WEB_DIST")
         .map(PathBuf::from)
         .unwrap_or_else(|| PathBuf::from("target/dx/aio-idea/release/web/public"));
+    let address = SocketAddr::from((host, port));
+    let listener = tokio::net::TcpListener::bind(address)
+        .await
+        .with_context(|| format!("绑定监听地址失败: {address}"))?;
+    let config = crate::host::configuration()?;
+    // 在连接业务数据库前持久化候选；端口冲突则不会污染候选记录。
+    let bootstrap = crate::host::RuntimeBootstrap::load(&config.cache_root)?;
     let plugin_catalog = plugins::server_catalog()?;
     let identity = aio_plugin_identity_server::service(&plugin_catalog)?;
     identity.initialize().await?;
@@ -38,22 +45,19 @@ pub async fn run() -> Result<()> {
     aio_plugin_rbac_server::service(&plugin_catalog)?
         .initialize()
         .await?;
-    let config = crate::host::configuration()?;
     let mut runtime_plugins = runtime::server::plugins::default_plugins()?;
     runtime_plugins.push(std::sync::Arc::new(crate::host::ProductIdentityPlugin(
         identity.clone(),
     )));
-    let composition = crate::host::RuntimeComposition::load(runtime_plugins, identity).await?;
-    let runtime = runtime::server::plugins::RuntimeHost::initialize_with_router(
-        config,
-        composition.plugins(),
-        move |state, runtime| {
+    let (runtime, mut composition) = bootstrap
+        .start(config, runtime_plugins, identity, move |state, runtime| {
             application::router(state, runtime, &plugin_catalog, web_dist.clone())
-        },
-    )
-    .await?;
-    let result = serve(&runtime, composition, host, port).await;
+        })
+        .await?;
+    let result = serve(&runtime, &mut composition, listener).await;
     let cleanup = runtime.shutdown().await;
+    // 清理完成后才释放文件锁，恢复命令不能和旧运行时资源释放交错。
+    drop(composition);
     match (result, cleanup) {
         (Err(error), Err(cleanup)) => Err(error.context(format!("运行时清理失败: {cleanup:#}"))),
         (Err(error), Ok(())) => Err(error),
@@ -63,15 +67,10 @@ pub async fn run() -> Result<()> {
 
 async fn serve(
     runtime: &runtime::server::plugins::RuntimeHost,
-    composition: crate::host::RuntimeComposition,
-    host: IpAddr,
-    port: u16,
+    composition: &mut crate::host::RuntimeComposition,
+    listener: tokio::net::TcpListener,
 ) -> Result<()> {
     let router = runtime.router();
-    let address = SocketAddr::from((host, port));
-    let listener = tokio::net::TcpListener::bind(address)
-        .await
-        .with_context(|| format!("绑定监听地址失败: {address}"))?;
     println!("AIO IDEA listening on http://{}", listener.local_addr()?);
     use std::future::IntoFuture;
     tokio::select! {
@@ -79,7 +78,7 @@ async fn serve(
             result.context("AIO IDEA 服务异常退出")
         }
         result = shutdown_signal() => result,
-        result = composition.watch(runtime.clone()) => result,
+        result = composition.watch(runtime) => result,
     }
 }
 

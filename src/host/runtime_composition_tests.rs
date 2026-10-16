@@ -53,9 +53,9 @@ async fn deployment_composition_switches_protocols_and_rebuilds_identity_without
     plugins.push(Arc::new(ProductIdentityPlugin(identity.clone())));
     let path = root.path().join("composition.json");
     tokio::fs::write(&path, br#"{"schema_version":1}"#).await?;
-    let mut control = RuntimeComposition::open(Some(path.clone()), plugins, identity).await?;
-    let host =
-        RuntimeHost::initialize_with_router(config, control.plugins(), move |state, runtime| {
+    let bootstrap = RuntimeBootstrap::open(Some(path.clone()), &config.cache_root)?;
+    let (host, mut control) = bootstrap
+        .start(config, plugins, identity, move |state, runtime| {
             crate::server::application::router(state, runtime, &catalog, web.clone())
         })
         .await?;
@@ -106,7 +106,7 @@ async fn deployment_composition_switches_protocols_and_rebuilds_identity_without
     assert_eq!(grpc(&client, &base, &cookie).await?, 404);
     assert_snapshot(&client, &base, &cookie).await?;
 
-    let before = control.plugins();
+    let before = control.plugins.clone();
     assert!(
         apply(&mut control, &host, json!({"schema_version":2}))
             .await
@@ -124,8 +124,8 @@ async fn deployment_composition_switches_protocols_and_rebuilds_identity_without
     assert!(
         before
             .iter()
-            .zip(control.plugins())
-            .all(|(left, right)| Arc::ptr_eq(left, &right))
+            .zip(&control.plugins)
+            .all(|(left, right)| Arc::ptr_eq(left, right))
     );
     assert_eq!(mcp(&client, &base, &cookie).await?, 200);
     assert_eq!(grpc(&client, &base, &cookie).await?, 404);
@@ -134,23 +134,29 @@ async fn deployment_composition_switches_protocols_and_rebuilds_identity_without
     assert_eq!(mcp(&client, &base, &cookie).await?, 200);
     assert_eq!(grpc(&client, &base, &cookie).await?, 200);
     assert_snapshot(&client, &base, &cookie).await?;
-    let watcher = tokio::spawn(control.watch(host.clone()));
     tokio::fs::write(
         root.path().join("pending.json"),
         br#"{"schema_version":1,"mcp":{"enabled":false}}"#,
     )
     .await?;
-    tokio::fs::rename(root.path().join("pending.json"), path).await?;
-    tokio::time::timeout(Duration::from_secs(10), async {
-        while !matches!(mcp(&client, &base, &cookie).await, Ok(status) if status == 404) {
-            tokio::time::sleep(Duration::from_millis(100)).await;
+    tokio::fs::rename(root.path().join("pending.json"), &path).await?;
+    tokio::select! {
+        result = control.watch(&host) => {
+            anyhow::bail!("观察任务提前退出: {result:?}");
         }
-        anyhow::Ok(())
-    })
-    .await??;
-    watcher.abort();
-    assert!(watcher.await.is_err_and(|error| error.is_cancelled()));
+        result = tokio::time::timeout(Duration::from_secs(10), async {
+            while !matches!(mcp(&client, &base, &cookie).await, Ok(status) if status == 404) {
+                tokio::time::sleep(Duration::from_millis(100)).await;
+            }
+            anyhow::Ok(())
+        }) => result??,
+    }
+    let directory = root.path().join("cache/runtime-composition");
+    assert!(ConfigurationJournal::open(&directory, &path).is_err());
     host.shutdown().await?;
+    assert!(ConfigurationJournal::open(&directory, &path).is_err());
+    drop(control);
+    assert!(ConfigurationJournal::open(&directory, &path).is_ok());
     assert!(!host.is_available());
     assert_eq!(
         client.get(format!("{base}/health")).send().await?.status(),

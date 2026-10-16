@@ -1,0 +1,98 @@
+use std::fs;
+
+use serde_json::json;
+
+use super::*;
+use crate::host::runtime_composition::recovery::execute;
+
+fn confirm(bootstrap: &mut RuntimeBootstrap) -> Result<()> {
+    let journal = bootstrap.journal.as_mut().context("缺少恢复记录")?;
+    let attempt = bootstrap.attempt.as_ref().context("缺少启动尝试")?;
+    journal.confirm(attempt, serde_json::to_value(&bootstrap.selected)?)
+}
+
+#[test]
+fn invalid_and_interrupted_candidates_preserve_disabled_capabilities_across_restart() -> Result<()>
+{
+    let root = tempfile::tempdir()?;
+    let source = root.path().join("composition.json");
+    let cache = root.path().join("cache");
+    fs::write(
+        &source,
+        br#"{"schema_version":1,"mcp":{"enabled":false},"evolution":{"enabled":false}}"#,
+    )?;
+    let mut initial = RuntimeBootstrap::open(Some(source.clone()), &cache)?;
+    let confirmed = initial.selected.clone();
+    confirm(&mut initial)?;
+    drop(initial);
+
+    for bytes in [
+        br#"{"schema_version":2}"#.as_slice(),
+        br#"{"schema_version":1,"mcp":{"enabled":true}}"#.as_slice(),
+    ] {
+        fs::write(&source, bytes)?;
+        let candidate = RuntimeBootstrap::open(Some(source.clone()), &cache)?;
+        drop(candidate);
+        let recovered = RuntimeBootstrap::open(Some(source.clone()), &cache)?;
+        assert_eq!(recovered.selected, confirmed);
+        assert!(recovered.attempt.is_none());
+        let record = execute("status", &source, &cache)?;
+        assert!(record.contains(&configuration_digest(bytes)));
+        assert!(execute("retry", &source, &cache).is_err());
+        assert!(execute("restore", &source, &cache).is_err());
+        drop(recovered);
+    }
+    execute("retry", &source, &cache)?;
+    let retried = RuntimeBootstrap::open(Some(source.clone()), &cache)?;
+    assert!(retried.attempt.is_some());
+    assert!(retried.selected.mcp.enabled);
+    drop(retried);
+    execute("restore", &source, &cache)?;
+    assert_eq!(parse(&read_configuration(&source)?)?, confirmed);
+    let restored = RuntimeBootstrap::open(Some(source), &cache)?;
+    assert_eq!(restored.selected, confirmed);
+    Ok(())
+}
+
+#[test]
+fn missing_source_uses_confirmed_configuration_and_first_start_fails_closed() -> Result<()> {
+    let root = tempfile::tempdir()?;
+    let source = root.path().join("composition.json");
+    let cache = root.path().join("cache");
+    assert_eq!(execute("status", &source, &cache)?, "null");
+    assert!(!cache.exists());
+    assert!(RuntimeBootstrap::open(Some(source.clone()), &cache).is_err());
+    fs::write(&source, br#"{"schema_version":1,"grpc":{"enabled":false}}"#)?;
+    let mut initial = RuntimeBootstrap::open(Some(source.clone()), &cache)?;
+    confirm(&mut initial)?;
+    drop(initial);
+    fs::remove_file(&source)?;
+    let recovered = RuntimeBootstrap::open(Some(source.clone()), &cache)?;
+    assert!(!recovered.selected.grpc.enabled);
+    assert!(recovered.attempt.is_none());
+    drop(recovered);
+    execute("restore", &source, &cache)?;
+    assert!(!parse(&read_configuration(&source)?)?.grpc.enabled);
+    Ok(())
+}
+
+#[test]
+fn recovery_revalidates_current_contract_and_rejects_corrupt_or_foreign_journals() -> Result<()> {
+    let root = tempfile::tempdir()?;
+    let source = root.path().join("composition.json");
+    let cache = root.path().join("cache");
+    let directory = cache.join("runtime-composition");
+    let mut journal = ConfigurationJournal::open(&directory, &source)?;
+    let attempt = journal.begin(configuration_digest(b"old contract"))?;
+    journal.confirm(&attempt, json!({"schema_version":7}))?;
+    drop(journal);
+    assert!(RuntimeBootstrap::open(Some(source.clone()), &cache).is_err());
+    assert!(execute("restore", &source, &cache).is_err());
+    assert!(!source.exists());
+    assert!(execute("status", &root.path().join("foreign.json"), &cache).is_err());
+    fs::write(directory.join("record.json"), b"{")?;
+    fs::write(&source, br#"{"schema_version":1}"#)?;
+    assert!(RuntimeBootstrap::open(Some(source.clone()), &cache).is_err());
+    assert!(execute("retry", &source, &cache).is_err());
+    Ok(())
+}

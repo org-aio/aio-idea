@@ -1,26 +1,26 @@
 //! 部署方声明原生能力组合；文件更新由监听器所有者处理，不进入待排空的插件任务。
 
-use std::{
-    any::TypeId,
-    path::{Path, PathBuf},
-    sync::Arc,
-    time::Duration,
-};
+use std::{any::TypeId, path::PathBuf, sync::Arc, time::Duration};
 
 use anyhow::{Context, Result, ensure};
 use az_plugin_core::{DynPlugin, Plugin};
+use az_plugin_host::recovery::{ConfigurationJournal, configuration_digest, read_configuration};
 use az_plugin_host::runtime::server::plugins::{
     DatabasePlugin, EvolutionPlugin, GrpcPlugin, McpPlugin, RhaiPlugin, RuntimeAssembly,
     RuntimeHost, TypeScriptPlugin,
 };
-use serde::Deserialize;
-use tokio::io::AsyncReadExt;
+use serde::{Deserialize, Serialize};
 
 use super::ProductIdentityPlugin;
 
-const MAX_COMPOSITION_BYTES: u64 = 64 * 1024;
+#[path = "runtime_bootstrap.rs"]
+mod bootstrap;
+#[path = "runtime_recovery.rs"]
+mod recovery;
+pub use bootstrap::RuntimeBootstrap;
+pub use recovery::runtime_command;
 
-#[derive(Clone, Debug, Deserialize, PartialEq, Eq)]
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(default, deny_unknown_fields)]
 struct Capability {
     enabled: bool,
@@ -36,13 +36,13 @@ impl Default for Capability {
     }
 }
 
-#[derive(Clone, Debug, Default, Deserialize, PartialEq, Eq)]
+#[derive(Clone, Debug, Default, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(default, deny_unknown_fields)]
 struct Resource {
     restart: u64,
 }
 
-#[derive(Clone, Debug, Deserialize, PartialEq, Eq)]
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
 struct Composition {
     schema_version: u32,
@@ -83,89 +83,44 @@ pub struct RuntimeComposition {
     applied: Composition,
     plugins: Vec<DynPlugin<RuntimeAssembly>>,
     identity: Arc<aio_plugin_identity_server::IdentityService>,
-    observed: Vec<u8>,
+    observed: Option<String>,
+    journal: Option<ConfigurationJournal>,
 }
 
 impl RuntimeComposition {
-    pub async fn load(
-        plugins: Vec<DynPlugin<RuntimeAssembly>>,
-        identity: Arc<aio_plugin_identity_server::IdentityService>,
-    ) -> Result<Self> {
-        let path = std::env::var_os("AIO_RUNTIME_COMPOSITION").map(PathBuf::from);
-        Self::open(path, plugins, identity).await
-    }
-
-    async fn open(
-        path: Option<PathBuf>,
-        plugins: Vec<DynPlugin<RuntimeAssembly>>,
-        identity: Arc<aio_plugin_identity_server::IdentityService>,
-    ) -> Result<Self> {
-        let mut control = Self {
-            path,
-            plugins,
-            identity,
-            applied: Composition::default(),
-            observed: Vec::new(),
-        };
-        if let Some(path) = &control.path {
-            let bytes = read(path).await?;
-            let selected = parse(&bytes)?;
-            control.plugins = control.select(&selected);
-            control.applied = selected;
-            control.observed = bytes;
-        }
-        Ok(control)
-    }
-
-    pub fn plugins(&self) -> Vec<DynPlugin<RuntimeAssembly>> {
-        self.plugins.clone()
-    }
-
-    fn select(&self, next: &Composition) -> Vec<DynPlugin<RuntimeAssembly>> {
-        let mut plugins = self.plugins.clone();
-        select(&mut plugins, &self.applied.rhai, &next.rhai, RhaiPlugin);
-        select(
-            &mut plugins,
-            &self.applied.typescript,
-            &next.typescript,
-            TypeScriptPlugin,
-        );
-        select(&mut plugins, &self.applied.mcp, &next.mcp, McpPlugin);
-        select(&mut plugins, &self.applied.grpc, &next.grpc, GrpcPlugin);
-        select(
-            &mut plugins,
-            &self.applied.evolution,
-            &next.evolution,
-            EvolutionPlugin,
-        );
-        if self.applied.identity != next.identity {
-            replace(&mut plugins, ProductIdentityPlugin(self.identity.clone()));
-        }
-        if self.applied.database != next.database {
-            replace(&mut plugins, DatabasePlugin);
-        }
-        plugins
-    }
-
-    // 相同失败内容只尝试一次；新文件会重新校验，成功之前保留已提交的配方。
+    // 候选执行前先落盘，崩溃或失败后相同内容不会在下次启动自动重试。
     async fn apply(&mut self, host: &RuntimeHost, bytes: Vec<u8>) -> Result<()> {
-        if bytes == self.observed {
+        let digest = configuration_digest(&bytes);
+        if self.observed.as_ref() == Some(&digest) {
             return Ok(());
         }
-        self.observed = bytes;
-        let selected = parse(&self.observed)?;
-        if selected == self.applied {
-            return Ok(());
+        let journal = self.journal.as_mut().context("缺少部署恢复记录")?;
+        let attempt = journal.begin(digest.clone())?;
+        self.observed = Some(digest);
+        let result = async {
+            let selected = parse(&bytes)?;
+            if selected != self.applied {
+                let plugins =
+                    select_plugins(&self.plugins, &self.identity, &self.applied, &selected);
+                host.reconfigure(plugins.clone()).await?;
+                self.plugins = plugins;
+                self.applied = selected;
+            }
+            anyhow::Ok(())
         }
-        let plugins = self.select(&selected);
-        host.reconfigure(plugins.clone()).await?;
-        self.plugins = plugins;
-        self.applied = selected;
-        eprintln!("已应用部署方运行时组合: {:?}", self.applied);
+        .await;
+        if let Err(error) = result {
+            return match journal.reject(&attempt) {
+                Ok(()) => Err(error),
+                Err(rejection) => Err(error.context(format!("保存拒绝记录失败: {rejection:#}"))),
+            };
+        }
+        journal.confirm(&attempt, serde_json::to_value(&self.applied)?)?;
+        eprintln!("已应用并确认部署方运行时组合: {:?}", self.applied);
         Ok(())
     }
 
-    pub async fn watch(mut self, host: RuntimeHost) -> Result<()> {
+    pub async fn watch(&mut self, host: &RuntimeHost) -> Result<()> {
         let Some(path) = self.path.clone() else {
             return std::future::pending().await;
         };
@@ -174,13 +129,18 @@ impl RuntimeComposition {
         let mut reported = None;
         loop {
             interval.tick().await;
-            let result = match read(&path).await {
-                Ok(bytes) => self.apply(&host, bytes).await,
+            let result = match read_configuration(&path) {
+                Ok(bytes) => self.apply(host, bytes).await,
                 Err(error) => Err(error),
             };
             if let Err(error) = result {
                 // 恢复失败时交回进程监督器，不能继续报告正常健康状态。
-                if !host.is_available() {
+                if !host.is_available()
+                    || self
+                        .journal
+                        .as_ref()
+                        .is_some_and(|journal| !journal.is_healthy())
+                {
                     return Err(error.context("运行时组合恢复失败，停止监听并交由监督器处理"));
                 }
                 let detail = format!("{error:#}");
@@ -193,6 +153,37 @@ impl RuntimeComposition {
             }
         }
     }
+}
+
+fn select_plugins(
+    current: &[DynPlugin<RuntimeAssembly>],
+    identity: &Arc<aio_plugin_identity_server::IdentityService>,
+    previous: &Composition,
+    next: &Composition,
+) -> Vec<DynPlugin<RuntimeAssembly>> {
+    let mut plugins = current.to_vec();
+    select(&mut plugins, &previous.rhai, &next.rhai, RhaiPlugin);
+    select(
+        &mut plugins,
+        &previous.typescript,
+        &next.typescript,
+        TypeScriptPlugin,
+    );
+    select(&mut plugins, &previous.mcp, &next.mcp, McpPlugin);
+    select(&mut plugins, &previous.grpc, &next.grpc, GrpcPlugin);
+    select(
+        &mut plugins,
+        &previous.evolution,
+        &next.evolution,
+        EvolutionPlugin,
+    );
+    if previous.identity != next.identity {
+        replace(&mut plugins, ProductIdentityPlugin(identity.clone()));
+    }
+    if previous.database != next.database {
+        replace(&mut plugins, DatabasePlugin);
+    }
+    plugins
 }
 
 fn select<P: Plugin<RuntimeAssembly>>(
@@ -230,26 +221,6 @@ fn parse(bytes: &[u8]) -> Result<Composition> {
         "运行时组合 schema_version 必须为 1"
     );
     Ok(selected)
-}
-
-async fn read(path: &Path) -> Result<Vec<u8>> {
-    let metadata = tokio::fs::metadata(path)
-        .await
-        .context("读取运行时组合文件属性失败")?;
-    ensure!(metadata.is_file(), "运行时组合必须是普通文件");
-    let file = tokio::fs::File::open(path)
-        .await
-        .context("打开运行时组合文件失败")?;
-    let mut bytes = Vec::new();
-    file.take(MAX_COMPOSITION_BYTES + 1)
-        .read_to_end(&mut bytes)
-        .await
-        .context("读取运行时组合文件失败")?;
-    ensure!(
-        bytes.len() as u64 <= MAX_COMPOSITION_BYTES,
-        "运行时组合文件不能超过 64 KiB"
-    );
-    Ok(bytes)
 }
 
 #[cfg(test)]

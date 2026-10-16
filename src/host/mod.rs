@@ -5,4 +5,4 @@ pub use configuration::configuration;
 #[cfg(test)]
 pub use identity::ProductIdentity;
 pub use identity::ProductIdentityPlugin;
-pub use runtime_composition::RuntimeComposition;
+pub use runtime_composition::{RuntimeBootstrap, RuntimeComposition, runtime_command};

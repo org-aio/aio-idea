@@ -2,10 +2,14 @@ use anyhow::{Context, Result};
 use az_plugin_host::configuration::{ComponentStorage, DeliveryConfig, HostConfig, PluginSource};
 use std::{env, path::PathBuf};
 
-pub fn configuration() -> Result<HostConfig> {
-    let cache_root = env::var_os("AIO_PLUGIN_CACHE")
+pub(super) fn cache_root() -> PathBuf {
+    env::var_os("AIO_PLUGIN_CACHE")
         .map(PathBuf::from)
-        .unwrap_or_else(|| ".aio/runtime".into());
+        .unwrap_or_else(|| ".aio/runtime".into())
+}
+
+pub fn configuration() -> Result<HostConfig> {
+    let cache_root = cache_root();
     let path = env::var_os("AIO_CONFIG")
         .map(PathBuf::from)
         .unwrap_or_else(|| "aio.toml".into());
