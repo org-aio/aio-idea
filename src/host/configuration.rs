@@ -20,6 +20,7 @@ pub fn configuration() -> Result<HostConfig> {
     )?;
     Ok(HostConfig {
         development: None,
+        remote_capabilities: env::var_os("AIO_REMOTE_CAPABILITIES").map(PathBuf::from),
         database_url: env::var("AIO_DATABASE_URL").context("缺少 AIO_DATABASE_URL")?,
         public_origin: env::var("AIO_PUBLIC_ORIGIN")
             .unwrap_or_else(|_| "https://aio.addzero.site".into()),
