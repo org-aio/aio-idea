@@ -5,6 +5,51 @@ use serde_json::json;
 use super::*;
 use crate::host::runtime_composition::recovery::execute;
 
+#[test]
+fn retired_dictionary_setting_migrates_without_reenabling_other_services() -> Result<()> {
+    let root = tempfile::tempdir()?;
+    let source = root.path().join("composition.json");
+    let cache = root.path().join("cache");
+    let old = json!({"schema_version":1,"dictionary":{"enabled":false,"restart":3},"files":{"enabled":false},"mcp":{"enabled":false}});
+    let bytes = serde_json::to_vec(&old)?;
+    fs::write(&source, &bytes)?;
+    let mut journal = ConfigurationJournal::open(&cache.join("runtime-composition"), &source)?;
+    let attempt = journal.begin(configuration_digest(&bytes))?;
+    journal.confirm(&attempt, old.clone())?;
+    drop(journal);
+    assert!(parse(&bytes).is_err(), "新输入不能继续冒充原生字典开关");
+    let recovered = RuntimeBootstrap::open(Some(source.clone()), &cache)?;
+    assert!(!recovered.selected.files.enabled);
+    assert!(!recovered.selected.mcp.enabled);
+    assert!(
+        execute("migrate", &source, &cache).is_err(),
+        "运行时持锁时不能改配置"
+    );
+    drop(recovered);
+    execute("migrate", &source, &cache)?;
+    let selected = parse(&read_configuration(&source)?)?;
+    assert!(!selected.files.enabled);
+    assert!(!selected.mcp.enabled);
+    let record = ConfigurationJournal::inspect(&cache.join("runtime-composition"), &source)?
+        .context("缺少恢复记录")?;
+    assert_eq!(record.confirmed.context("缺少成功组合")?.value, old);
+    let mut restarted = RuntimeBootstrap::open(Some(source), &cache)?;
+    assert!(restarted.attempt.is_some());
+    confirm(&mut restarted)?;
+    assert!(
+        restarted
+            .journal
+            .as_ref()
+            .context("缺少日志")?
+            .confirmed()
+            .context("缺少成功组合")?
+            .value
+            .get("dictionary")
+            .is_none()
+    );
+    Ok(())
+}
+
 fn confirm(bootstrap: &mut RuntimeBootstrap) -> Result<()> {
     let journal = bootstrap.journal.as_mut().context("缺少恢复记录")?;
     let attempt = bootstrap.attempt.as_ref().context("缺少启动尝试")?;

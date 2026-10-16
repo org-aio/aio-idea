@@ -27,13 +27,13 @@ async function run(browser, mobile) {
     await page.goto(base);
     await page.locator('.application-shell:visible').waitFor();
     await page.getByRole('navigation', { name: '场景' }).getByRole('button', { name: '系统', exact: true }).click();
-    for (const [label, table] of [['用户管理', '用户'], ['角色管理', '角色'], ['字典管理', null], ['文件列表', '文件']]) {
+    for (const [label, table] of [['用户管理', '用户'], ['角色管理', '角色'], ['文件列表', '文件']]) {
       await (await nav()).getByRole('button', { name: label, exact: true }).click();
       const active = page.locator('[data-aio-page-active="true"]');
       await active.getByRole('heading', { level: 1, name: label === '文件列表' ? '文件管理' : label, exact: true }).waitFor();
-      if (table) await active.getByRole('table', { name: table, exact: true }).waitFor();
+      await active.getByRole('table', { name: table, exact: true }).waitFor();
       assert(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth));
-      await page.screenshot({ path: resolve(output, `${mobile ? 'mobile' : 'desktop'}-${table || 'dictionary'}.png`) });
+      await page.screenshot({ path: resolve(output, `${mobile ? 'mobile' : 'desktop'}-${table}.png`) });
     }
     await page.getByRole('navigation', { name: '场景' }).getByRole('button', { name: '社区插件', exact: true }).click();
     const community = await nav();

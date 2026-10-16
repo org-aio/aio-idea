@@ -29,7 +29,7 @@ async fn main() -> anyhow::Result<()> {
         [] => server::run().await,
         ["supervisor"] => az_plugin_host::runtime::server::run_supervisor().await,
         ["runtime", command] => host::runtime_command(command),
-        _ => anyhow::bail!("用法: aio-idea [supervisor | runtime status|retry|restore]"),
+        _ => anyhow::bail!("用法: aio-idea [supervisor | runtime status|retry|restore|migrate]"),
     }
 }
 

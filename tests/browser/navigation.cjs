@@ -98,7 +98,6 @@ async function scenario(browser, mobile) {
       "系统管理",
       "用户管理",
       "角色管理",
-      "字典管理",
       "基础设施",
       "文件管理",
       "文件列表",
@@ -111,7 +110,7 @@ async function scenario(browser, mobile) {
     }
     await systemManagement.click();
     assert.equal(await systemManagement.getAttribute("aria-expanded"), "false");
-    for (const leaf of ["用户管理", "角色管理", "字典管理"]) {
+    for (const leaf of ["用户管理", "角色管理"]) {
       assert.equal(await systemNavigation.getByRole("button", { name: leaf, exact: true }).count(), 0);
     }
     await systemManagement.click();

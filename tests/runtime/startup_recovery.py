@@ -124,7 +124,7 @@ def command(name, success=True):
 
 
 good = {"schema_version": 1, "mcp": {"enabled": False}, "evolution": {"enabled": False},
-        "dictionary": {"enabled": False}, "files": {"enabled": False},
+        "files": {"enabled": False},
         "access_control": {"enabled": False}, "tenants": {"enabled": False}, "marketplace": {"enabled": False}}
 try:
     assert command("status").strip() == "null"

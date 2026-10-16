@@ -17,7 +17,6 @@ pub fn client_catalog() -> anyhow::Result<ClientCatalog> {
     aio_plugin_identity_client::register(&mut builder);
     aio_plugin_marketplace_client::register(&mut builder);
     aio_plugin_rbac_client::register(&mut builder);
-    aio_plugin_dictionary_client::register(&mut builder);
     aio_plugin_file_client::register(&mut builder);
     aio_plugin_settings::register(&mut builder);
     aio_plugin_account::register(&mut builder);
@@ -61,7 +60,6 @@ mod tests {
         for page_id in [
             "users",
             "roles",
-            "dictionary-management",
             "file-list",
             "profile",
             "settings",

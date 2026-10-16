@@ -14,7 +14,9 @@ Rhai 与 TypeScript 通过统一 `call_capability` 使用这些能力，仍要�
 
 双语言策略和安装示例在平台 `docs/plugin/evolution/`。模型能力独立提供；此产品没有配置默认模型、自动批准或后台演进调度。调用计数按租户、版本和激活代数持久化，源码回滚不包含业务数据回滚。
 
-`plugins/server.rs` 将身份、字典、文件、权限、租户和市场服务贡献到运行时的同一个 Dill 容器。每代先创建资源并登记关闭责任，再初始化和装配原有 Controller；初始化或路由装配失败由生命周期补偿。停用会移除路由并关闭对应连接池，重新启用创建新实例，业务数据保留。市场服务当前只有无资源的健康路由。
+`plugins/server.rs` 将身份、文件、权限、租户和市场服务贡献到运行时的同一个 Dill 容器。每代先创建资源并登记关闭责任，再初始化和装配原有 Controller；初始化或路由装配失败由生命周期补偿。停用会移除路由并关闭对应连接池，重新启用创建新实例，业务数据保留。市场服务当前只有无资源的健康路由。
+
+字典通过市场独立安装 v2 Sidecar 整包，目录、前端、业务进程与数据库迁移均属于该包。`required_permissions` 保留宿主 `dictionary:manage` 门槛，普通租户成员不能通过安装获取管理权限；发现、挂载和请求实时检查授权。产品不注册 `/api/dictionaries`，不链接字典实现。旧数据需要按 [字典迁移步骤](https://github.com/org-aio/aio-plugin-dictionary/blob/main/tests/README.md) 显式复制，不双写旧表。
 
 `IdentityServicePlugin` 拥有真实身份服务；`ProductIdentityPlugin` 从当前容器注入它，在每次 `on_initialize` 中新建适配器自己的连接池，再将同一个 `ProductIdentity` 绑定到身份、授权和计费接口。停止和部分初始化失败均关闭本代资源。`identity.restart` 重建身份服务及依赖它的服务、控制器和适配器，会话仍从持久化数据库读取。`identity_tests` 使用真实 PostgreSQL 验证共享实例、重启、失败恢复和旧引用已关闭。
 
@@ -32,7 +34,6 @@ Rhai 与 TypeScript 通过统一 `call_capability` 使用这些能力，仍要�
   "mcp": { "enabled": true, "restart": 0 },
   "grpc": { "enabled": true, "restart": 0 },
   "evolution": { "enabled": true, "restart": 0 },
-  "dictionary": { "enabled": true, "restart": 0 },
   "files": { "enabled": true, "restart": 0 },
   "access_control": { "enabled": true, "restart": 0 },
   "tenants": { "enabled": true, "restart": 0 },
@@ -42,7 +43,7 @@ Rhai 与 TypeScript 通过统一 `call_capability` 使用这些能力，仍要�
 }
 ```
 
-未填写的能力默认启用，`restart` 默认 0。改变某项的 `restart` 会重建该项及依赖它的插件；未变配方保留 Arc 身份和无关单例。字段表示产品支持的部署选项，原生插件注册和依赖身份仍使用 TypeId。身份服务和数据库是当前产品的必需资源，只允许重建；脚本语言、协议入口、演进控制及五项可选系统服务可以启停。停用某种语言后，依赖它的增强不可执行，已保存版本不会被删除。停用系统服务时对应 API 返回 404，静态 UI 菜单目前仍会显示。
+未填写的能力默认启用，`restart` 默认 0。改变某项的 `restart` 会重建该项及依赖它的插件；未变配方保留 Arc 身份和无关单例。字段表示产品支持的部署选项，原生插件注册和依赖身份仍使用 TypeId。身份服务和数据库是当前产品的必需资源，只允许重建；脚本语言、协议入口、演进控制及四项可选系统服务可以启停。停用某种语言后，依赖它的增强不可执行，已保存版本不会被删除。停用这些原生系统服务时对应 API 返回 404，静态 UI 菜单目前仍会显示。字典整包的启停由租户安装记录管理，其菜单跟随包生命周期。
 
 整个候选经平台组合校验后提交；配置错误或可恢复的在线启动、路由装配失败恢复旧组合，记录错误。相同失败内容不自动重试，修改文件内容可再次提交；删文件不等于停用。文件最多 64 KiB，未知字段和未知 schema 版本均拒绝。恢复失败会停止监听，由部署环境的进程监督器重启。连接池已关闭时，恢复会创建新实例，不复用旧服务引用。
 
@@ -66,8 +67,12 @@ aio-idea runtime status
 aio-idea runtime retry
 # 停服后按当前契约校验并原子写回最后成功组合。
 aio-idea runtime restore
+# 停服后迁移旧部署文件中的 dictionary 字段，其他选项保持不变。
+aio-idea runtime migrate
 ```
 
-`status` 在服务运行时也可读取，输出持久化 JSON 快照或 `null`，不表示进程健康。`retry`、`restore` 必须取得独占锁，宿主存活时拒绝执行。自动回退从不改写部署文件；只有 `restore` 会替换它。恢复范围是原生运行时组合，不撤销业务数据迁移和外部副作用，也不更换宿主二进制。Unix 会同步记录与父目录，其他操作系统的运行及掉电恢复尚未验收。
+`status` 在服务运行时也可读取，输出持久化 JSON 快照或 `null`，不表示进程健康。`retry`、`restore`、`migrate` 必须取得独占锁，宿主存活时拒绝执行。自动回退从不改写部署文件；`restore` 与 `migrate` 原子写入候选，实际启动成功前保留旧的最后成功记录。已保存旧记录中的 `dictionary` 会校验并移除，其他停用状态保留；新部署输入直接拒绝这个退役字段。迁移不自动安装或启用字典包，原来停用的租户应保持整包停用。
+
+恢复范围是原生运行时组合，不撤销业务数据迁移和外部副作用，也不更换宿主二进制。Unix 会同步记录与父目录，其他操作系统的运行及掉电恢复尚未验收。
 
 阅读顺序：`runtime_bootstrap.rs` 的启动选择 → `runtime_composition.rs` 的在线提交 → `runtime_recovery.rs` 的本机恢复。无需数据库的配置测试使用 `cargo test --no-default-features --features server runtime_composition::bootstrap`；真实进程验收见 `tests/runtime/README.md`。

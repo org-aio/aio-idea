@@ -2,9 +2,6 @@
 
 use std::sync::Arc;
 
-use aio_plugin_dictionary_server::{
-    DictionaryController, DictionaryService, PostgresDictionaryService,
-};
 use aio_plugin_file_server::{FileController, FileService, FileServiceImpl};
 use aio_plugin_identity_server::IdentityService;
 use aio_plugin_rbac_server::AccessControlService;
@@ -60,14 +57,6 @@ service_plugin!(
     aio_plugin_identity_server::router
 );
 service_plugin!(
-    DictionaryPlugin,
-    PostgresDictionaryService,
-    [dyn DictionaryService],
-    [DictionaryController],
-    [IdentityService],
-    aio_plugin_dictionary_server::router
-);
-service_plugin!(
     FilePlugin,
     FileServiceImpl,
     [dyn FileService],
@@ -116,7 +105,6 @@ pub fn server_plugins() -> Result<Vec<DynPlugin<RuntimeAssembly>>> {
     let mut builder = dill::CatalogBuilder::new();
     builder
         .add::<IdentityServicePlugin>()
-        .add::<DictionaryPlugin>()
         .add::<FilePlugin>()
         .add::<AccessControlPlugin>()
         .add::<TenantPlugin>()

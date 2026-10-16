@@ -47,7 +47,7 @@ impl RuntimeBootstrap {
                 let confirmed = journal.confirmed().with_context(|| {
                     format!("部署配置不可用且没有已确认组合；请修正部署文件: {error:#}")
                 })?;
-                let selected = parse(&serde_json::to_vec(&confirmed.value)?)
+                let selected = migrate_saved(&serde_json::to_vec(&confirmed.value)?)
                     .context("最后成功组合不符合当前产品契约，拒绝启动")?;
                 eprintln!("部署配置未应用，启动最后成功组合: {error:#}");
                 selected

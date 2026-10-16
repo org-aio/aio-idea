@@ -46,8 +46,8 @@ The current default system tree is contributed by independent plugin repositorie
 系统
 ├── 系统管理
 │   ├── 用户管理        aio-plugin-rbac
-│   ├── 角色管理        aio-plugin-rbac
-│   └── 字典管理        aio-plugin-dictionary
+│   └── 角色管理        aio-plugin-rbac
+├── 字典管理            aio-plugin-dictionary（按租户安装的 v2 整包）
 └── 基础设施
     └── 文件管理
         └── 文件列表    aio-plugin-file
@@ -79,7 +79,9 @@ cargo run --no-default-features --features server
 
 本产品的静态插件装配由 `src/plugins/mod.rs` 维护，包含系统插件、账户入口和产品测试；通用 `aio plugin sync` 模板不能覆盖它。增加静态插件时同步 Cargo 依赖及 features、`aio.toml`、`.aio/plugins.lock` 和此装配入口，再验证既有目录与新增页面。设备助手的「云端文件」位于工作空间，使用当前账号查看同步版本及设备报告。
 
-服务端系统插件由 `src/plugins/server.rs` 接入平台 `RuntimeHost`，与 Rhai、TypeScript、MCP 和 gRPC 使用同一生命周期与 Dill 容器。部署配置可在线启停字典、文件、权限、租户和市场服务，或重建真实身份服务；停止关闭资源，恢复保留数据与会话。配置和验证方式见 [产品宿主装配](src/host/README.md)。系统实现仍随宿主编译，系统 UI 仍静态装配，尚未实现独立动态交付。
+服务端系统插件由 `src/plugins/server.rs` 接入平台 `RuntimeHost`，与 Rhai、TypeScript、MCP 和 gRPC 使用同一生命周期与 Dill 容器。部署配置可在线启停文件、权限、租户和市场服务，或重建真实身份服务；停止关闭资源，恢复保留数据与会话。配置和验证方式见 [产品宿主装配](src/host/README.md)。这些系统实现及 UI 当前仍随宿主编译。
+
+字典已改为独立 v2 Sidecar 整包，宿主不再依赖其客户端、服务端或静态页面；从插件市场安装后动态贡献入口，升级与回滚同时替换后端和前端，停用或卸载移除菜单。它保留宿主 `dictionary:manage` 角色门槛，安装不自动授予管理权限。旧数据与部署配置的切换步骤见 [字典迁移与验收](https://github.com/org-aio/aio-plugin-dictionary/blob/main/tests/README.md)，不能仅替换宿主二进制就认为迁移完成。
 
 `lib/dioxus-admin-workbench` 以 Git 子模块锁定完整版本，Cargo patch 将产品和静态扩展的基础 UI crates 统一到该版本，避免同名不同源码依赖造成 Rust 类型不一致。它是基础库，不是运行时业务插件；CI、容器构建前必须初始化子模块。
 

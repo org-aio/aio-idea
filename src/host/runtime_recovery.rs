@@ -24,6 +24,12 @@ pub(super) fn execute(command: &str, source: &Path, cache_root: &Path) -> Result
             let record = ConfigurationJournal::inspect(&directory, source)?;
             Ok(serde_json::to_string_pretty(&record)?)
         }
+        "migrate" => {
+            let mut journal = ConfigurationJournal::open(&directory, source)?;
+            let selected = migrate_saved(&read_configuration(source)?)?;
+            journal.stage_configuration(&serde_json::to_value(selected)?)?;
+            Ok("已迁移部署候选；字典启停由已安装整包管理，下次实际启动才确认新组合".into())
+        }
         "retry" => {
             let mut journal = ConfigurationJournal::open(&directory, source)?;
             parse(&read_configuration(source)?)?;
@@ -33,10 +39,10 @@ pub(super) fn execute(command: &str, source: &Path, cache_root: &Path) -> Result
         "restore" => {
             let mut journal = ConfigurationJournal::open(&directory, source)?;
             let confirmed = journal.confirmed().context("没有已确认的可恢复配置")?;
-            parse(&serde_json::to_vec(&confirmed.value)?)?;
-            journal.restore()?;
+            let selected = migrate_saved(&serde_json::to_vec(&confirmed.value)?)?;
+            journal.stage_configuration(&serde_json::to_value(selected)?)?;
             Ok("已恢复最后成功组合；可以重新启动宿主".into())
         }
-        _ => anyhow::bail!("用法: aio-idea runtime status|retry|restore"),
+        _ => anyhow::bail!("用法: aio-idea runtime status|retry|restore|migrate"),
     }
 }

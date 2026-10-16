@@ -2,7 +2,6 @@
 
 use std::sync::Mutex;
 
-use aio_plugin_dictionary_server::{DictionaryService, PostgresDictionaryService};
 use aio_plugin_file_server::{FileService, FileServiceImpl};
 use aio_plugin_identity_server::IdentityService;
 use aio_plugin_rbac_server::AccessControlService;
@@ -20,21 +19,6 @@ pub(super) async fn verify(
     generations: &Mutex<Vec<RuntimeState>>,
 ) -> Result<()> {
     let old = latest(generations)?;
-    let dictionary = client
-        .post(format!("{base}/api/dictionaries/types"))
-        .header("Cookie", cookie)
-        .json(&json!({
-            "code": format!("lifecycle-{}", uuid::Uuid::new_v4()),
-            "name": "生命周期",
-            "description": "",
-            "enabled": true,
-        }))
-        .send()
-        .await?
-        .error_for_status()?
-        .json::<Value>()
-        .await?;
-    let dictionary_id = dictionary["data"]["id"].as_str().context("缺少字典 ID")?;
     let uploaded = client
         .post(format!("{base}/api/files"))
         .header("Cookie", cookie)
@@ -48,7 +32,6 @@ pub(super) async fn verify(
         .await?;
     let file_id = uploaded["data"]["id"].as_str().context("缺少文件 ID")?;
     let paths = [
-        "/api/dictionaries",
         "/api/files",
         "/api/rbac",
         "/api/tenants",
@@ -71,7 +54,6 @@ pub(super) async fn verify(
         host,
         json!({
             "schema_version": 1,
-            "dictionary": {"enabled": false},
             "files": {"enabled": false},
             "access_control": {"enabled": false},
             "tenants": {"enabled": false},
@@ -102,28 +84,9 @@ pub(super) async fn verify(
     apply(control, host, json!({"schema_version":1})).await?;
     let restored = latest(generations)?;
     assert!(!Arc::ptr_eq(
-        &old.service::<PostgresDictionaryService>()?,
-        &restored.service::<PostgresDictionaryService>()?
-    ));
-    assert!(!Arc::ptr_eq(
         &old.service::<FileServiceImpl>()?,
         &restored.service::<FileServiceImpl>()?
     ));
-    let dictionaries = client
-        .get(format!("{base}/api/dictionaries"))
-        .header("Cookie", cookie)
-        .send()
-        .await?
-        .error_for_status()?
-        .json::<Value>()
-        .await?;
-    assert!(
-        dictionaries["data"]["types"]
-            .as_array()
-            .context("缺少字典列表")?
-            .iter()
-            .any(|item| item["id"] == dictionary_id)
-    );
     let body = client
         .get(format!("{base}/api/files/{file_id}"))
         .header("Cookie", cookie)
@@ -144,10 +107,7 @@ pub(super) async fn verify(
             200
         );
     }
-    for path in [
-        format!("/api/dictionaries/types/{dictionary_id}"),
-        format!("/api/files/{file_id}"),
-    ] {
+    for path in [format!("/api/files/{file_id}")] {
         client
             .delete(format!("{base}{path}"))
             .header("Cookie", cookie)
@@ -173,10 +133,6 @@ pub(super) async fn identity_rebuilt(old: &RuntimeState, next: &RuntimeState) ->
         &next.service::<IdentityService>()?
     ));
     assert!(!Arc::ptr_eq(
-        &old.service::<PostgresDictionaryService>()?,
-        &next.service::<PostgresDictionaryService>()?
-    ));
-    assert!(!Arc::ptr_eq(
         &old.service::<FileServiceImpl>()?,
         &next.service::<FileServiceImpl>()?
     ));
@@ -192,12 +148,6 @@ pub(super) async fn identity_rebuilt(old: &RuntimeState, next: &RuntimeState) ->
 }
 
 async fn assert_services_closed(state: &RuntimeState) -> Result<()> {
-    assert_pool_closed(
-        state
-            .service::<PostgresDictionaryService>()?
-            .view("default")
-            .await,
-    )?;
     assert_pool_closed(state.service::<FileServiceImpl>()?.list("default").await)?;
     assert_pool_closed(
         state

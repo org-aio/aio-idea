@@ -12,8 +12,7 @@ use az_plugin_host::runtime::server::plugins::{
 use serde::{Deserialize, Serialize};
 
 use crate::plugins::server::{
-    AccessControlPlugin, DictionaryPlugin, FilePlugin, IdentityServicePlugin, MarketplacePlugin,
-    TenantPlugin,
+    AccessControlPlugin, FilePlugin, IdentityServicePlugin, MarketplacePlugin, TenantPlugin,
 };
 
 #[path = "runtime_bootstrap.rs"]
@@ -60,8 +59,6 @@ struct Composition {
     #[serde(default)]
     evolution: Capability,
     #[serde(default)]
-    dictionary: Capability,
-    #[serde(default)]
     files: Capability,
     #[serde(default)]
     access_control: Capability,
@@ -84,7 +81,6 @@ impl Default for Composition {
             mcp: Capability::default(),
             grpc: Capability::default(),
             evolution: Capability::default(),
-            dictionary: Capability::default(),
             files: Capability::default(),
             access_control: Capability::default(),
             tenants: Capability::default(),
@@ -192,12 +188,6 @@ fn select_plugins(
         &next.evolution,
         EvolutionPlugin,
     );
-    select(
-        &mut plugins,
-        &previous.dictionary,
-        &next.dictionary,
-        DictionaryPlugin,
-    );
     select(&mut plugins, &previous.files, &next.files, FilePlugin);
     select(
         &mut plugins,
@@ -256,6 +246,15 @@ fn parse(bytes: &[u8]) -> Result<Composition> {
         "运行时组合 schema_version 必须为 1"
     );
     Ok(selected)
+}
+
+// 只迁移持久化数据；新部署输入仍拒绝已退出原生组合的字典开关。
+fn migrate_saved(bytes: &[u8]) -> Result<Composition> {
+    let mut value: serde_json::Value = serde_json::from_slice(bytes)?;
+    if let Some(retired) = value.as_object_mut().and_then(|v| v.remove("dictionary")) {
+        let _: Capability = serde_json::from_value(retired).context("旧字典开关格式无效")?;
+    }
+    parse(&serde_json::to_vec(&value)?)
 }
 
 #[cfg(test)]
