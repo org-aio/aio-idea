@@ -32,7 +32,10 @@ async fn frontend_http_mounts_verified_assets_and_revokes_live_access() -> Resul
     let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await?;
     let base = format!("http://{}", listener.local_addr()?);
     let state = RuntimeState::isolated_admin_test(
-        Arc::new(crate::host::ProductIdentity::new(identity.clone(), &database).await?),
+        Arc::new(crate::host::ProductIdentity::new(
+            identity.clone(),
+            &database,
+        )?),
         &database,
         &base,
         &temporary.path().join("cache"),
@@ -68,7 +71,7 @@ async fn exercise(
     let mut headers = HeaderMap::new();
     headers.insert(header::COOKIE, HeaderValue::from_str(&cookie)?);
     let session = state
-        .identity
+        .service::<dyn az_plugin_host::identity::IdentityProvider>()?
         .authenticate(&headers)
         .await?
         .context("测试会话无效")?;

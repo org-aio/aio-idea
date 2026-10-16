@@ -21,7 +21,10 @@ async fn bootstrap_revalidates_permissions_and_logout_before_304() -> Result<()>
     let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await?;
     let base = format!("http://{}", listener.local_addr()?);
     let state = super::RuntimeState::isolated_admin_test(
-        std::sync::Arc::new(crate::host::ProductIdentity::new(identity.clone(), &database).await?),
+        std::sync::Arc::new(crate::host::ProductIdentity::new(
+            identity.clone(),
+            &database,
+        )?),
         &database,
         &base,
         temporary.path(),

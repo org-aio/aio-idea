@@ -35,7 +35,7 @@ async fn system_management_browser_workflows() -> Result<()> {
     let base = format!("http://{}", listener.local_addr()?);
     let temporary = tempfile::tempdir()?;
     let runtime = az_plugin_host::runtime::server::RuntimeState::isolated_admin_test(
-        std::sync::Arc::new(crate::host::ProductIdentity::new(identity, &database).await?),
+        std::sync::Arc::new(crate::host::ProductIdentity::new(identity, &database)?),
         &database,
         &base,
         temporary.path(),

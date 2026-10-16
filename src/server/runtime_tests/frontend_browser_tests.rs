@@ -63,7 +63,10 @@ async fn mounts_real_dioxus_binary_and_calls_component_over_browser_bridge() -> 
     let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await?;
     let base = format!("http://{}", listener.local_addr()?);
     let state = RuntimeState::isolated_admin_test(
-        Arc::new(crate::host::ProductIdentity::new(identity.clone(), &database).await?),
+        Arc::new(crate::host::ProductIdentity::new(
+            identity.clone(),
+            &database,
+        )?),
         &database,
         &base,
         &temporary.path().join("cache"),

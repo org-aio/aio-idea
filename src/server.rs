@@ -44,10 +44,15 @@ pub async fn run() -> Result<()> {
         .initialize()
         .await?;
     let config = crate::host::configuration()?;
-    let identity = std::sync::Arc::new(
-        crate::host::ProductIdentity::new(identity, &config.database_url).await?,
-    );
-    let runtime = runtime::server::RuntimeState::initialize(config, identity).await?;
+    let identity = std::sync::Arc::new(crate::host::ProductIdentity::new(
+        identity,
+        &config.database_url,
+    )?);
+    let mut runtime_plugins = runtime::server::plugins::default_plugins()?;
+    runtime_plugins.push(std::sync::Arc::new(crate::host::ProductIdentityPlugin(
+        identity,
+    )));
+    let runtime = runtime::server::RuntimeState::initialize(config, runtime_plugins).await?;
     let result = serve(&runtime, &plugin_catalog, web_dist, host, port).await;
     let cleanup = runtime.shutdown().await;
     match (result, cleanup) {
