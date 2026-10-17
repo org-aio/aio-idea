@@ -8,4 +8,4 @@ rev = "8be1263cd6a5e366fbe8ff2bf5a1f95580ccaa0a"
 
 [[plugins]]
 git = "https://github.com/org-aio/aio-plugin-device.git"
-rev = "45a70f5d5a8f61290163644ba6d24e0d13312353"
+rev = "20251627b8524b63c46b28cef400bc9412210143"
