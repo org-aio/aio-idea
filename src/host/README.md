@@ -87,3 +87,5 @@ aio-idea runtime migrate
 恢复范围是原生运行时组合，不撤销业务数据迁移和外部副作用，也不更换宿主二进制。Unix 会同步记录与父目录，其他操作系统的运行及掉电恢复尚未验收。
 
 阅读顺序：`runtime_bootstrap.rs` 的启动选择 → `runtime_composition.rs` 的在线提交 → `runtime_recovery.rs` 的本机恢复。无需数据库的配置测试使用 `cargo test --no-default-features --features server runtime_composition::bootstrap`；真实进程验收见 `tests/runtime/README.md`。
+
+`device_tunnels` 同样支持 `{ "enabled": true, "restart": 0 }` 的原生能力开关。服务目录、独立访问网关和活动隧道由 device 插件拥有；停用时释放监听并断开连接。部署需按 [device 服务端说明](https://github.com/org-aio/aio-plugin-device/blob/main/server/README.md) 配置独立域名。

@@ -82,6 +82,7 @@ version = "2026.9.14"
 dependencies = [
  "aio-plugin-account",
  "aio-plugin-device-client",
+ "aio-plugin-device-server",
  "aio-plugin-file-client",
  "aio-plugin-file-server",
  "aio-plugin-identity-client",
@@ -129,12 +130,38 @@ dependencies = [
 [[package]]
 name = "aio-plugin-device-client"
 version = "0.1.0"
-source = "git+https://github.com/org-aio/aio-plugin-device.git?rev=32b639b63b7444a5f21e10421c553c2c636794e5#32b639b63b7444a5f21e10421c553c2c636794e5"
+source = "git+https://github.com/org-aio/aio-plugin-device.git?rev=45a70f5d5a8f61290163644ba6d24e0d13312353#45a70f5d5a8f61290163644ba6d24e0d13312353"
 dependencies = [
  "az-dioxus-admin-shell",
  "dill",
  "dioxus",
  "serde_json",
+]
+
+[[package]]
+name = "aio-plugin-device-server"
+version = "0.1.0"
+source = "git+https://github.com/org-aio/aio-plugin-device.git?rev=45a70f5d5a8f61290163644ba6d24e0d13312353#45a70f5d5a8f61290163644ba6d24e0d13312353"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "axum",
+ "az-plugin-core",
+ "az-plugin-host",
+ "base64 0.22.1",
+ "dill",
+ "http-body-util",
+ "hyper",
+ "hyper-util",
+ "psl",
+ "serde",
+ "serde_json",
+ "sha2",
+ "sqlx",
+ "tokio",
+ "tokio-util",
+ "url",
+ "uuid",
 ]
 
 [[package]]
@@ -756,7 +783,7 @@ dependencies = [
 [[package]]
 name = "az-plugin-bundle"
 version = "2026.5.10"
-source = "git+https://github.com/org-aio/aio-platform.git?rev=f8e6fb6a4093541ff93d1fd70c9b5497b077c5e1#f8e6fb6a4093541ff93d1fd70c9b5497b077c5e1"
+source = "git+https://github.com/org-aio/aio-platform.git?rev=918142599ca3adddd1ebeea0a515f5c50564795f#918142599ca3adddd1ebeea0a515f5c50564795f"
 dependencies = [
  "anyhow",
  "az-plugin-contract",
@@ -774,7 +801,7 @@ dependencies = [
 [[package]]
 name = "az-plugin-contract"
 version = "2026.5.10"
-source = "git+https://github.com/org-aio/aio-platform.git?rev=f8e6fb6a4093541ff93d1fd70c9b5497b077c5e1#f8e6fb6a4093541ff93d1fd70c9b5497b077c5e1"
+source = "git+https://github.com/org-aio/aio-platform.git?rev=918142599ca3adddd1ebeea0a515f5c50564795f#918142599ca3adddd1ebeea0a515f5c50564795f"
 dependencies = [
  "anyhow",
  "jsonschema",
@@ -792,7 +819,7 @@ dependencies = [
 [[package]]
 name = "az-plugin-core"
 version = "2026.5.10"
-source = "git+https://github.com/org-aio/aio-platform.git?rev=f8e6fb6a4093541ff93d1fd70c9b5497b077c5e1#f8e6fb6a4093541ff93d1fd70c9b5497b077c5e1"
+source = "git+https://github.com/org-aio/aio-platform.git?rev=918142599ca3adddd1ebeea0a515f5c50564795f#918142599ca3adddd1ebeea0a515f5c50564795f"
 dependencies = [
  "anyhow",
  "dill",
@@ -801,7 +828,7 @@ dependencies = [
 [[package]]
 name = "az-plugin-delivery"
 version = "2026.5.10"
-source = "git+https://github.com/org-aio/aio-platform.git?rev=f8e6fb6a4093541ff93d1fd70c9b5497b077c5e1#f8e6fb6a4093541ff93d1fd70c9b5497b077c5e1"
+source = "git+https://github.com/org-aio/aio-platform.git?rev=918142599ca3adddd1ebeea0a515f5c50564795f#918142599ca3adddd1ebeea0a515f5c50564795f"
 dependencies = [
  "anyhow",
  "serde",
@@ -811,7 +838,7 @@ dependencies = [
 [[package]]
 name = "az-plugin-development"
 version = "2026.10.17"
-source = "git+https://github.com/org-aio/aio-platform.git?rev=f8e6fb6a4093541ff93d1fd70c9b5497b077c5e1#f8e6fb6a4093541ff93d1fd70c9b5497b077c5e1"
+source = "git+https://github.com/org-aio/aio-platform.git?rev=918142599ca3adddd1ebeea0a515f5c50564795f#918142599ca3adddd1ebeea0a515f5c50564795f"
 dependencies = [
  "anyhow",
  "az-plugin-manifest",
@@ -826,7 +853,7 @@ dependencies = [
 [[package]]
 name = "az-plugin-enhancement"
 version = "2026.5.10"
-source = "git+https://github.com/org-aio/aio-platform.git?rev=f8e6fb6a4093541ff93d1fd70c9b5497b077c5e1#f8e6fb6a4093541ff93d1fd70c9b5497b077c5e1"
+source = "git+https://github.com/org-aio/aio-platform.git?rev=918142599ca3adddd1ebeea0a515f5c50564795f#918142599ca3adddd1ebeea0a515f5c50564795f"
 dependencies = [
  "anyhow",
  "az-plugin-contract",
@@ -849,7 +876,7 @@ dependencies = [
 [[package]]
 name = "az-plugin-host"
 version = "2026.10.17"
-source = "git+https://github.com/org-aio/aio-platform.git?rev=f8e6fb6a4093541ff93d1fd70c9b5497b077c5e1#f8e6fb6a4093541ff93d1fd70c9b5497b077c5e1"
+source = "git+https://github.com/org-aio/aio-platform.git?rev=918142599ca3adddd1ebeea0a515f5c50564795f#918142599ca3adddd1ebeea0a515f5c50564795f"
 dependencies = [
  "anyhow",
  "arc-swap",
@@ -910,7 +937,7 @@ dependencies = [
 [[package]]
 name = "az-plugin-manifest"
 version = "2026.5.10"
-source = "git+https://github.com/org-aio/aio-platform.git?rev=f8e6fb6a4093541ff93d1fd70c9b5497b077c5e1#f8e6fb6a4093541ff93d1fd70c9b5497b077c5e1"
+source = "git+https://github.com/org-aio/aio-platform.git?rev=918142599ca3adddd1ebeea0a515f5c50564795f#918142599ca3adddd1ebeea0a515f5c50564795f"
 dependencies = [
  "anyhow",
  "semver",
@@ -926,7 +953,7 @@ dependencies = [
 [[package]]
 name = "az-plugin-package"
 version = "2026.5.10"
-source = "git+https://github.com/org-aio/aio-platform.git?rev=f8e6fb6a4093541ff93d1fd70c9b5497b077c5e1#f8e6fb6a4093541ff93d1fd70c9b5497b077c5e1"
+source = "git+https://github.com/org-aio/aio-platform.git?rev=918142599ca3adddd1ebeea0a515f5c50564795f#918142599ca3adddd1ebeea0a515f5c50564795f"
 dependencies = [
  "anyhow",
  "az-plugin-manifest",
@@ -942,7 +969,7 @@ dependencies = [
 [[package]]
 name = "az-plugin-runtime"
 version = "2026.5.10"
-source = "git+https://github.com/org-aio/aio-platform.git?rev=f8e6fb6a4093541ff93d1fd70c9b5497b077c5e1#f8e6fb6a4093541ff93d1fd70c9b5497b077c5e1"
+source = "git+https://github.com/org-aio/aio-platform.git?rev=918142599ca3adddd1ebeea0a515f5c50564795f#918142599ca3adddd1ebeea0a515f5c50564795f"
 dependencies = [
  "aes-gcm",
  "anyhow",
@@ -966,7 +993,7 @@ dependencies = [
 [[package]]
 name = "az-tool"
 version = "0.1.0"
-source = "git+https://github.com/org-aio/aio-platform.git?rev=f8e6fb6a4093541ff93d1fd70c9b5497b077c5e1#f8e6fb6a4093541ff93d1fd70c9b5497b077c5e1"
+source = "git+https://github.com/org-aio/aio-platform.git?rev=918142599ca3adddd1ebeea0a515f5c50564795f#918142599ca3adddd1ebeea0a515f5c50564795f"
 dependencies = [
  "anyhow",
  "semver",
@@ -6514,6 +6541,15 @@ name = "protoc-bin-vendored-win32"
 version = "3.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "263a3f48f01e7309e857138bd47f785585b4a005e8e56c6d2824ce91195999c3"
+
+[[package]]
+name = "psl"
+version = "2.1.241"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c7319b480e204d67e759cad7886178335d26324c7c8573c126cc9dfa7350d064"
+dependencies = [
+ "psl-types",
+]
 
 [[package]]
 name = "psl-types"

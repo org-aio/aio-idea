@@ -88,7 +88,8 @@ pub fn server_plugins() -> Result<Vec<DynPlugin<RuntimeAssembly>>> {
         .add::<IdentityServicePlugin>()
         .add::<FilePlugin>()
         .add::<AccessControlPlugin>()
-        .add::<TenantPlugin>();
+        .add::<TenantPlugin>()
+        .add::<aio_plugin_device_server::DeviceTunnelPlugin>();
     let catalog = builder.build();
     let plugins = catalog.get::<dill::AllOf<dyn Plugin<RuntimeAssembly>>>()?;
     Ok(plugins.into_iter().collect())

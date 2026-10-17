@@ -65,6 +65,7 @@ mod tests {
             "tenants",
             "space-files",
             "space-terminal",
+            "space-tunnels",
         ] {
             assert!(page_ids.contains(page_id), "缺少系统页面: {page_id}");
         }

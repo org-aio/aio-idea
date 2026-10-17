@@ -71,6 +71,8 @@ struct Composition {
     #[serde(default)]
     tenants: Capability,
     #[serde(default)]
+    device_tunnels: Capability,
+    #[serde(default)]
     trusted_management_components: Vec<TrustedManagementComponent>,
     #[serde(default)]
     identity: Resource,
@@ -92,6 +94,7 @@ impl Default for Composition {
             files: Capability::default(),
             access_control: Capability::default(),
             tenants: Capability::default(),
+            device_tunnels: Capability::default(),
             trusted_management_components: Vec::new(),
             identity: Resource::default(),
             database: Resource::default(),
@@ -260,6 +263,12 @@ fn select_plugins(
         AccessControlPlugin,
     );
     select(&mut plugins, &previous.tenants, &next.tenants, TenantPlugin);
+    select(
+        &mut plugins,
+        &previous.device_tunnels,
+        &next.device_tunnels,
+        aio_plugin_device_server::DeviceTunnelPlugin,
+    );
     // 信任与首次引导分开持久化，移除摘要会重建组件环境并暂停该版本的高权限能力。
     if previous.trusted_management_components != next.trusted_management_components {
         if next.trusted_management_components.is_empty() {
