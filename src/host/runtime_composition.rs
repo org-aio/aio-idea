@@ -7,9 +7,9 @@ use az_plugin_core::{DynPlugin, Plugin};
 use az_plugin_host::recovery::{ConfigurationJournal, configuration_digest, read_configuration};
 use az_plugin_host::runtime::server::plugins::{
     ComponentManagementPlugin, DatabasePlugin, EnhancementServicePlugin, EnhancementsPlugin,
-    EvolutionPlugin, GrpcPlugin, McpPlugin, ProcessPlugin, RhaiPlugin, RuntimeAssembly,
-    RuntimeHost, ScriptRuntimePlugin, SidecarPlugin, TrustedManagementComponent, TypeScriptPlugin,
-    WasmComponentPlugin, WasmPlugin,
+    EvolutionPlugin, GrpcPlugin, McpPlugin, PostgresEnhancementCatalogPlugin, ProcessPlugin,
+    RhaiPlugin, RuntimeAssembly, RuntimeHost, ScriptRuntimePlugin, SidecarPlugin,
+    TrustedManagementComponent, TypeScriptPlugin, WasmComponentPlugin, WasmPlugin,
 };
 use serde::{Deserialize, Serialize};
 
@@ -227,6 +227,12 @@ fn select_plugins(
         &previous_scripts,
         &next_scripts,
         ScriptRuntimePlugin,
+    );
+    select(
+        &mut plugins,
+        &previous_scripts,
+        &next_scripts,
+        PostgresEnhancementCatalogPlugin,
     );
     select(
         &mut plugins,

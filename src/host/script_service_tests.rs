@@ -9,6 +9,7 @@ use az_plugin_contract::grpc::{
 };
 use az_plugin_host::runtime::server::{
     RuntimeState,
+    enhancement_catalog::EnhancementCatalog,
     plugins::{RuntimeCapabilities, ScriptRuntime},
 };
 use tonic::{Code, Request, transport::Channel};
@@ -50,6 +51,7 @@ pub(super) async fn verify(
         apply(control, host, no_languages()).await?;
         let without = system_services::latest(generations)?;
         assert!(without.service::<ScriptRuntime>().is_err());
+        assert!(without.service::<dyn EnhancementCatalog>().is_err());
         assert!(Arc::ptr_eq(&pool, &without.service::<sqlx::PgPool>()?));
         assert!(Arc::ptr_eq(
             &initial.service::<IdentityService>()?,
@@ -118,6 +120,10 @@ pub(super) async fn verify(
         assert!(!Arc::ptr_eq(
             &before.service::<ScriptRuntime>()?,
             &restored.service::<ScriptRuntime>()?
+        ));
+        assert!(!Arc::ptr_eq(
+            &before.service::<dyn EnhancementCatalog>()?,
+            &restored.service::<dyn EnhancementCatalog>()?
         ));
         assert_evolution(&restored, true)?;
         assert_eq!(head(client, base, cookie).await?, saved_head);
