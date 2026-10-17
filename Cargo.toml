@@ -5,8 +5,8 @@ edition = "2024"
 license = "MIT OR Apache-2.0"
 
 [dependencies]
-az-plugin-core = { git = "https://github.com/org-aio/aio-platform.git", rev = "ef566e14fa807cdb57efc63b4ad9d92adde66122", default-features = false, optional = true }
-az-plugin-host = { git = "https://github.com/org-aio/aio-platform.git", rev = "ef566e14fa807cdb57efc63b4ad9d92adde66122", default-features = false }
+az-plugin-core = { git = "https://github.com/org-aio/aio-platform.git", rev = "0248a8053f6e93b62eb956e4a34d98a6b0764d82", default-features = false, optional = true }
+az-plugin-host = { git = "https://github.com/org-aio/aio-platform.git", rev = "0248a8053f6e93b62eb956e4a34d98a6b0764d82", default-features = false }
 anyhow = "1.0.99"
 async-trait = { version = "0.1", optional = true }
 axum = { version = "0.8.6", optional = true }
@@ -24,8 +24,8 @@ tonic = { version = "0.14.6", optional = true }
 aio_plugin_account = { package = "aio-plugin-account", git = "https://github.com/zjarlin/aio-plugin-account.git", rev = "b6e6c561397e60fba1a1a9832ded783b19969506", optional = true }
 aio_plugin_file_client = { package = "aio-plugin-file-client", git = "https://github.com/zjarlin/aio-plugin-file.git", rev = "f9ad588e9221639f99146ac012464af2438e0b9a", optional = true }
 aio_plugin_file_server = { package = "aio-plugin-file-server", git = "https://github.com/zjarlin/aio-plugin-file.git", rev = "0b87eaf70c6a761af66f9aadf453c0cf7150efaa", optional = true }
-aio_plugin_marketplace_client = { package = "aio-plugin-marketplace-client", git = "https://github.com/zjarlin/aio-plugin-marketplace.git", rev = "79d1ee7bf386fd7cd55f53fd11751beb101bf03d", optional = true }
-aio_plugin_marketplace_server = { package = "aio-plugin-marketplace-server", git = "https://github.com/zjarlin/aio-plugin-marketplace.git", rev = "79d1ee7bf386fd7cd55f53fd11751beb101bf03d", optional = true }
+aio_plugin_marketplace_client = { package = "aio-plugin-marketplace-client", git = "https://github.com/zjarlin/aio-plugin-marketplace.git", rev = "925b7e08ed09bc4b4cd9b0ce621f818cb7258432", optional = true }
+aio_plugin_marketplace_server = { package = "aio-plugin-marketplace-server", git = "https://github.com/zjarlin/aio-plugin-marketplace.git", rev = "925b7e08ed09bc4b4cd9b0ce621f818cb7258432", optional = true }
 aio_plugin_settings = { package = "aio-plugin-settings", git = "https://github.com/zjarlin/aio-plugin-settings.git", rev = "3aeb5f7c62a979a0843a8ab7c9c255ec4246c695", optional = true }
 aio_plugin_identity_client = { package = "aio-plugin-identity-client", git = "https://github.com/zjarlin/aio-plugin-identity.git", rev = "a74d2e0531a6f3a907f6e5a4f1fa61c5cbc44f62", optional = true }
 aio_plugin_identity_server = { package = "aio-plugin-identity-server", git = "https://github.com/zjarlin/aio-plugin-identity.git", rev = "9b585cb6a6f74b5fef006189ba23d8d71854d45b", optional = true }
@@ -49,10 +49,10 @@ server = ["dep:az-plugin-core", "az-plugin-host/server", "az-plugin-host/rhai", 
 unsafe_code = "forbid"
 
 [dev-dependencies]
-az-plugin-contract = { git = "https://github.com/org-aio/aio-platform.git", rev = "ef566e14fa807cdb57efc63b4ad9d92adde66122", features = ["grpc"] }
-az-plugin-host = { git = "https://github.com/org-aio/aio-platform.git", rev = "ef566e14fa807cdb57efc63b4ad9d92adde66122", default-features = false, features = ["test-support"] }
+az-plugin-contract = { git = "https://github.com/org-aio/aio-platform.git", rev = "0248a8053f6e93b62eb956e4a34d98a6b0764d82", features = ["grpc"] }
+az-plugin-host = { git = "https://github.com/org-aio/aio-platform.git", rev = "0248a8053f6e93b62eb956e4a34d98a6b0764d82", default-features = false, features = ["test-support"] }
 tempfile = "3.23.0"
-az-plugin-package = { git = "https://github.com/org-aio/aio-platform.git", rev = "ef566e14fa807cdb57efc63b4ad9d92adde66122" }
+az-plugin-package = { git = "https://github.com/org-aio/aio-platform.git", rev = "0248a8053f6e93b62eb956e4a34d98a6b0764d82" }
 kuchikiki = { version = "=0.8.8-speedreader" }
 reqwest = { version = "0.12.23", default-features = false, features = ["json", "rustls-tls", "stream"] }
 tower-http = { version = "0.6.2", features = ["fs", "compression-gzip"] }

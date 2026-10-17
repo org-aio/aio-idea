@@ -6,7 +6,11 @@ const { chromium } = require('playwright');
 const { PNG } = require('pngjs');
 
 const root = resolve('target/dx/aio-idea/release/web/public');
-const output = resolve('target/marketplace-test');
+const output = resolve(process.env.AIO_MARKETPLACE_OUTPUT || 'target/marketplace-test');
+const upstream = process.env.AIO_URL;
+if (upstream) {
+  assert.equal(new URL(upstream).hostname, '127.0.0.1', '仅允许本机 dx serve');
+}
 let entries;
 let revision;
 const png = new PNG({ width: 240, height: 80 });
@@ -18,7 +22,7 @@ function reset() {
   revision = 'a'.repeat(64);
   entries = ['Dioxus Counter','KMP Counter','TypeScript Counter'].map((title,i)=>({
     git:`https://github.com/example/plugin-${i}.git`,rev:revision,title,summary:'前端交互与独立后端服务',license:'MIT',tags:['fullstack'],
-    installed:i<2,source_id:`source-${i}`,state:i<2?'active':null,active_revision:i<2?revision:null,runtime:'process',capabilities:{network:[],filesystem:[],database:false},
+    installed:i<2,source_id:`source-${i}`,state:i===0?'suspended':i===1?'active':null,active_revision:i<2?revision:null,runtime:'process',capabilities:{network:[],filesystem:[],database:false},
   }));
 }
 const session = {user_id:'test',account:'test',display_name:'Test',tenant_id:'test',tenant_label:'Test',permissions:['plugin:manage']};
@@ -54,10 +58,19 @@ const server = createServer(async (req,res)=>{
 
 async function run(browser,mobile,base) {
   reset();
-  const context=await browser.newContext({viewport:mobile?{width:390,height:844}:{width:1440,height:1000}});
+  const context=await browser.newContext({viewport:mobile?{width:390,height:844}:{width:1440,height:900}});
   const page=await context.newPage();const errors=[];page.on('pageerror',e=>errors.push(e.message));
+  page.on('console',message=>{if(message.type()==='error'){errors.push(message.text());}});
   try {
-    await page.goto(base);
+    // 保留 dx 的资源与开发工具连接，仅将业务 API 指向隔离夹具。
+    if(upstream){
+      await page.route(new URL('/api/**',upstream).href,async route=>{
+        const url=new URL(route.request().url());
+        const response=await route.fetch({url:base+url.pathname+url.search});
+        await route.fulfill({response});
+      });
+    }
+    await page.goto(upstream||base);
     if(mobile)await page.getByRole('button',{name:'打开菜单',exact:true}).click();
     await page.locator('button[aria-label$="的账户菜单"]').last().click();
     await page.getByRole('menuitem',{name:'插件市场',exact:true}).click();
@@ -68,10 +81,20 @@ async function run(browser,mobile,base) {
     assert.equal(await page.locator('.dx-markdown table').count(),1);
     await page.waitForFunction(()=>{const img=document.querySelector('.dx-markdown img');return img?.complete&&img.naturalWidth===240;});
     assert.equal(await page.evaluate(()=>window.__readmeExecuted),undefined);
-    assert.equal(await page.getByRole('link',{name:'unsafe',exact:true}).getAttribute('href'),'#');
+    assert.equal(await page.getByRole('link',{name:'unsafe',exact:true}).count(),0);
+    assert.equal(await page.locator('.dx-markdown a[href^="javascript:"]').count(),0);
+    await page.locator('.dx-markdown').getByText('来源不可用',{exact:true}).waitFor();
     assert((await page.getByRole('link',{name:'Source',exact:true}).getAttribute('href')).includes('/blob/'+ 'c'.repeat(40)+'/shared/model.ts'));
     assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
+    await page.locator('.extension-browser__actions').getByText('工作区：运行环境已暂停',{exact:true}).waitFor();
+    assert.equal(await page.getByRole('button',{name:'启用',exact:true}).count(),0);
+    await page.getByText('运行环境暂不可用，已安装版本和数据保留。联系部署管理员恢复运行环境后，插件将继续运行。',{exact:true}).waitFor();
     await page.screenshot({path:resolve(output,`${mobile?'mobile':'desktop'}-details.png`)});
+    await page.getByLabel('管理插件',{exact:true}).click();
+    await page.getByRole('menuitem',{name:'停用',exact:true}).click();
+    await page.locator('.extension-browser__actions').getByText('工作区：已停用',{exact:true}).waitFor();
+    assert.equal(entries[0].state,'disabled');
+
     if(mobile)await page.getByRole('button',{name:'插件列表',exact:true}).click();
     await page.getByRole('textbox',{name:'搜索插件',exact:true}).fill('KMP');
     await page.waitForFunction(()=>document.querySelectorAll('[role=treeitem]').length===1);
@@ -95,8 +118,8 @@ async function run(browser,mobile,base) {
     assert.equal(await page.locator('.extension-browser__heading h1').innerText(),'TypeScript Counter');
     assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
     assert.deepEqual(errors,[]);
-    return {viewport:mobile?'mobile':'desktop',tree:true,markdown:true,relativeImage:true,sanitized:true,directInstall:true,management:true,automaticReadme:true};
-  }catch(error){await page.screenshot({path:resolve(output,`${mobile?'mobile':'desktop'}-failure.png`)});console.error(await page.locator('body').innerText());throw error;}
+    return {viewport:mobile?'mobile':'desktop',tree:true,markdown:true,relativeImage:true,sanitized:true,directInstall:true,management:true,suspendedManagement:true,automaticReadme:true};
+  }catch(error){await page.screenshot({path:resolve(output,`${mobile?'mobile':'desktop'}-failure.png`)});console.error(await page.locator('body').innerText(),{browserErrors:errors});throw error;}
   finally{await context.close();}
 }
 (async()=>{
@@ -104,7 +127,7 @@ async function run(browser,mobile,base) {
   await new Promise(r=>server.listen(Number(process.env.AIO_MARKETPLACE_PREVIEW_PORT||0),'127.0.0.1',r));
   const base=`http://127.0.0.1:${server.address().port}`;
   if(process.env.AIO_MARKETPLACE_PREVIEW_PORT){console.log(base);return;}
-  const browser=await chromium.launch({channel:'chrome',headless:true});
+  const browser=await chromium.launch(process.env.AIO_BROWSER_EXECUTABLE ? {executablePath:process.env.AIO_BROWSER_EXECUTABLE,headless:true,args:['--no-sandbox']} : {channel:'chrome',headless:true});
   try{const report=[await run(browser,false,base),await run(browser,true,base)];await writeFile(resolve(output,'report.json'),JSON.stringify(report,null,2));console.log(JSON.stringify(report));}
   finally{await browser.close();server.close();}
 })().catch(error=>{console.error(error);process.exitCode=1;server.close();});

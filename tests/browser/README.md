@@ -34,7 +34,9 @@
 
 `delivery-live.cjs` 在公网同时保持桌面与移动页面打开，先验证 61 秒无变化轮询，再等待真实源码 push 导致的 Counter 或 README 更新。`AIO_DELIVERY_E2E_MODE=counter|readme` 选择场景；脚本输出 ready 文件后再提交对应源码变更，不调用发布或激活接口。`cli-delivery-live.cjs` 验证三种 CLI 临时插件的真实前后端通信；运行前等待服务器完成首次构建和安装。报告与截图保存到 `target/delivery-test`。
 
-`marketplace.cjs` 使用编译后的市场页面与隔离 HTTP 数据验证桌面/移动端分栏、搜索、键盘选择、README 表格/代码/版本图片、危险链接过滤、直接安装、启停、卸载确认和文档自动更新。报告与截图保存到 `target/marketplace-test`。`AIO_MARKETPLACE_PREVIEW_PORT` 可启动本机预览。公网提交触发自动发布的验收单独记录，不能用协议夹具代替。
+`marketplace.cjs` 使用编译后的市场页面与隔离 HTTP 数据验证桌面/移动端分栏、搜索、键盘选择、README 表格/代码/版本图片、危险链接过滤、直接安装、启停、卸载确认和文档自动更新；暂停状态必须能正常解析、显示保留版本与数据的提示、隐藏启用按钮并允许停用。测试检查页面异常、控制台错误和横向溢出。先运行 `dx serve --platform web`，再设置 `AIO_URL=http://127.0.0.1:<port>` 获取当前产物；API 仍使用隔离夹具。`AIO_BROWSER_EXECUTABLE` 可指定 Chromium，`AIO_MARKETPLACE_OUTPUT` 可指定报告与截图目录，默认 `target/marketplace-test`。`AIO_MARKETPLACE_PREVIEW_PORT` 可启动本机预览。公网提交触发自动发布的验收单独记录，不能用协议夹具代替。
+
+2026-10-17 使用当前 `dx serve --platform web` 产物完成 1440×900 与 390×844 Chromium 验收，上述交互、暂停管理及后台文档刷新全部通过；两种尺寸均无页面异常、控制台错误或页面横向溢出，并人工核对截图布局。开发工具 WebSocket 保留连接到 dx，仅业务 API 由 Playwright 转发到夹具。
 
 `navigation.cjs` 验证场景根筛选、系统树目录及折叠状态、账户全屏页面、返回后页面状态，以及移动端账户菜单关闭抽屉和页面无溢出。使用 Playwright；将其安装到可由 Node 解析的目录后运行：
 

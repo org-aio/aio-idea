@@ -26,3 +26,24 @@ cargo test --locked --no-default-features --features server host:: -- --include-
 `src/host/script_service_tests.rs` 在同一产品宿主中发布两种语言的增强，保持 MCP HTTP 客户端与 gRPC 连接，在线移除全部语言及脚本服务。原生设备能力在显式授权后继续执行，增强入口消失，身份与数据库单例保留；分别恢复一种语言后核对版本摘要、激活代数和调用结果。只恢复与活动包不匹配的语言时，增强目录为空、调用被拒绝，原生目录及调用仍可用。测试还覆盖停用语言无法编译候选、语言重启会重建脚本服务、演进控制开关保留以及原生能力撤权。
 
 字典业务与浏览器验收随独立插件维护，见 [整包测试](https://github.com/org-aio/aio-plugin-dictionary/blob/main/tests/README.md)。它使用真实产品、Docker Sidecar 和 PostgreSQL 验证不重编宿主的安装、升级、回滚、停用、重启、实时撤权、数据复制及桌面/手机操作；产品不再保留第二套静态字典测试。
+
+## 执行器暂停与进程恢复
+
+`executor_service_tests.rs` 在产品组合测试中覆盖 Wasm/Sidecar 的两代接口启停与重建，并使用真实组件存储。`executor_recovery.py` 使用产品二进制、平台 WIT 生命周期夹具、正式字典 Sidecar 包与真实 Docker 监督器，验证零执行器首次启动、同时暂停、强杀后恢复、仅恢复一种执行器、按类型重启、暂停时停用/卸载，以及原摘要、代数、回滚排除记录和 Sidecar 数据保留。MCP 与 HTTP 能力目录在暂停期间持续可用；正式 gRPC 客户端由 Rust 组合测试覆盖。
+
+准备新的本机独立库 `executor_recovery_test`，撤销 `public` schema 的公共权限，并设置：
+
+```sh
+export AIO_EXECUTOR_TEST_BINARY=/path/to/aio-idea
+export AIO_EXECUTOR_TEST_DATABASE_URL='postgresql://postgres@127.0.0.1:5432/executor_recovery_test'
+export AIO_EXECUTOR_TEST_POSTGRES_CONTAINER=your-isolated-postgres
+export AIO_EXECUTOR_TEST_PACKAGER=/path/to/aio-platform/target/debug/examples/package
+export AIO_EXECUTOR_TEST_WASM_COMPONENT=/path/to/release_fixture.wasm
+export AIO_EXECUTOR_TEST_SIDECAR_PACKAGE=/path/to/dictionary.aio-plugin
+export AIO_EXECUTOR_TEST_PROCESS_IMAGES=sha256:your-installed-sidecar-image
+python3 tests/runtime/executor_recovery.py
+```
+
+Wasm 夹具与整包工具分别由平台 `lib/plugin/runtime/tests/fixture/README.md` 和 `lib/plugin/bundle/examples/README.md` 的命令构建；Sidecar 包按字典仓库的整包验收说明构建。镜像摘要必须与包清单一致且已在本机存在。脚本只检查自己进程目录对应的容器，结束时停止自己启动的宿主和监督器；验收后删除测试数据库及输出的临时目录。它不修改现役宿主或生产安装记录。
+
+2026-10-17 在 Linux 隔离环境完成：8 项产品宿主测试、`startup_recovery.py`、`executor_recovery.py` 及 server 全目标 Clippy 均通过。真实恢复测试核对完整安装记录、Wasm 调用结果和 Sidecar 字典数据，确认暂停后旧票据失效、恢复后按原版本继续执行、退出后无本次容器残留；整个流程未重编或替换宿主二进制。浏览器市场交互由 `tests/browser/marketplace.cjs` 独立验收，不能据此宣称生产环境已部署。

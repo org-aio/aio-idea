@@ -7,7 +7,8 @@ use az_plugin_core::{DynPlugin, Plugin};
 use az_plugin_host::recovery::{ConfigurationJournal, configuration_digest, read_configuration};
 use az_plugin_host::runtime::server::plugins::{
     DatabasePlugin, EnhancementServicePlugin, EnhancementsPlugin, EvolutionPlugin, GrpcPlugin,
-    McpPlugin, RhaiPlugin, RuntimeAssembly, RuntimeHost, ScriptRuntimePlugin, TypeScriptPlugin,
+    McpPlugin, ProcessPlugin, RhaiPlugin, RuntimeAssembly, RuntimeHost, ScriptRuntimePlugin,
+    SidecarPlugin, TypeScriptPlugin, WasmComponentPlugin, WasmPlugin,
 };
 use serde::{Deserialize, Serialize};
 
@@ -53,6 +54,10 @@ struct Composition {
     #[serde(default)]
     typescript: Capability,
     #[serde(default)]
+    wasm: Capability,
+    #[serde(default)]
+    sidecar: Capability,
+    #[serde(default)]
     mcp: Capability,
     #[serde(default)]
     grpc: Capability,
@@ -78,6 +83,8 @@ impl Default for Composition {
             schema_version: 1,
             rhai: Capability::default(),
             typescript: Capability::default(),
+            wasm: Capability::default(),
+            sidecar: Capability::default(),
             mcp: Capability::default(),
             grpc: Capability::default(),
             evolution: Capability::default(),
@@ -182,6 +189,26 @@ fn select_plugins(
     );
     select(&mut plugins, &previous.mcp, &next.mcp, McpPlugin);
     select(&mut plugins, &previous.grpc, &next.grpc, GrpcPlugin);
+    // 同一运行环境同时管理两代插件契约，避免只暂停其中一种入口。
+    select(&mut plugins, &previous.wasm, &next.wasm, WasmPlugin);
+    select(
+        &mut plugins,
+        &previous.wasm,
+        &next.wasm,
+        WasmComponentPlugin,
+    );
+    select(
+        &mut plugins,
+        &previous.sidecar,
+        &next.sidecar,
+        ProcessPlugin,
+    );
+    select(
+        &mut plugins,
+        &previous.sidecar,
+        &next.sidecar,
+        SidecarPlugin,
+    );
     // 脚本服务随可用语言装配；语言重启引发的依赖重建仍由运行时处理。
     let previous_scripts = Capability {
         enabled: previous.rhai.enabled || previous.typescript.enabled,

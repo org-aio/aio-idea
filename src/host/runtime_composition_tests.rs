@@ -3,6 +3,8 @@
 use super::*;
 use serde_json::{Value, json};
 
+#[path = "executor_service_tests.rs"]
+mod executor_services;
 #[path = "script_service_tests.rs"]
 mod script_services;
 #[path = "system_service_tests.rs"]
@@ -33,10 +35,13 @@ async fn deployment_composition_switches_protocols_and_rebuilds_identity_without
     let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await?;
     let base = format!("http://{}", listener.local_addr()?);
     let config = az_plugin_host::configuration::HostConfig {
-        database_url: database,
+        database_url: database.clone(),
         public_origin: base.clone(),
         cache_root: root.path().join("cache"),
-        component_storage: None,
+        component_storage: Some(az_plugin_host::configuration::ComponentStorage {
+            database_url: database,
+            root: root.path().join("components"),
+        }),
         default_plugins: vec![],
         delivery: None,
         development: None,
@@ -89,6 +94,7 @@ async fn deployment_composition_switches_protocols_and_rebuilds_identity_without
     assert_snapshot(&client, &base, &cookie).await?;
     system_services::verify(&mut control, &host, &client, &base, &cookie, &generations).await?;
     script_services::verify(&mut control, &host, &client, &base, &cookie, &generations).await?;
+    executor_services::verify(&mut control, &host, &client, &base, &cookie, &generations).await?;
 
     apply(
         &mut control,
