@@ -1,3 +1,4 @@
+use az_plugin_host::runtime::server::plugin_catalog::PluginCatalog;
 use std::{path::Path, sync::Arc};
 
 use anyhow::{Context as _, Result, ensure};
@@ -208,7 +209,7 @@ async fn exercise_http(
     );
     assert_eq!(
         state
-            .service::<PluginStore>()?
+            .service::<dyn PluginCatalog>()?
             .published_marketplace_entry(&git, None)
             .await?
             .context("缺少市场当前发布版本")?

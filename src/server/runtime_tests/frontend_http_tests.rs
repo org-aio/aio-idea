@@ -1,3 +1,4 @@
+use az_plugin_host::runtime::server::plugin_catalog::PluginCatalog;
 use std::sync::Arc;
 
 use super::test_support::PluginPackage;
@@ -220,7 +221,7 @@ async fn exercise(
         .execute(&state.database()?)
         .await?;
     state
-        .service::<PluginStore>()?
+        .service::<dyn PluginCatalog>()?
         .set_enabled(&session.tenant_id, &page_id, false, None)
         .await?;
     assert_eq!(
@@ -228,7 +229,7 @@ async fn exercise(
         StatusCode::NOT_FOUND
     );
     state
-        .service::<PluginStore>()?
+        .service::<dyn PluginCatalog>()?
         .set_enabled(&session.tenant_id, &page_id, true, None)
         .await?;
     assert_eq!(
@@ -320,7 +321,7 @@ async fn exercise(
         .execute(&state.database()?)
         .await?;
     state
-        .service::<PluginStore>()?
+        .service::<dyn PluginCatalog>()?
         .uninstall(&session.tenant_id, &page_id)
         .await?;
     assert_eq!(
@@ -351,7 +352,7 @@ async fn exercise(
         StatusCode::UNAUTHORIZED
     );
     state
-        .service::<PluginStore>()?
+        .service::<dyn PluginCatalog>()?
         .uninstall(&session.tenant_id, &page_id)
         .await?;
     Ok(())
@@ -404,7 +405,7 @@ async fn activate(
     state.cache_test_package(package).await?;
     let verified = package.verify()?;
     state
-        .service::<PluginStore>()?
+        .service::<dyn PluginCatalog>()?
         .activate(
             tenant,
             DiscoveredPlugin {
