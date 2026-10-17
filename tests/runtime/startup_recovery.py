@@ -70,7 +70,7 @@ def configuration(value):
     pending.replace(source)
 
 
-def request(path, value=None):
+def request(path, value=None, method=None):
     headers = {"Cookie": cookie} if cookie else {}
     data = None
     if value is not None:
@@ -78,7 +78,7 @@ def request(path, value=None):
         headers.update({"Content-Type": "application/json", "Accept": "application/json, text/event-stream",
                         "MCP-Protocol-Version": "2025-06-18"})
     try:
-        response = http.open(urllib.request.Request(origin + path, data=data, headers=headers), timeout=2)
+        response = http.open(urllib.request.Request(origin + path, data=data, headers=headers, method=method), timeout=2)
     except urllib.error.HTTPError as error:
         response = error
     with response:
@@ -103,8 +103,8 @@ def ready():
         return False
 
 
-def start():
-    launch()
+def start(overrides=None):
+    launch(overrides)
     until(ready)
     for path in ["/api/dictionaries", "/api/files", "/api/rbac", "/api/tenants", "/api/plugins/marketplace"]:
         assert request(path)[0] == 404, "disabled system route reappeared: " + path
@@ -126,22 +126,78 @@ def command(name, success=True):
 good = {"schema_version": 1, "mcp": {"enabled": False}, "evolution": {"enabled": False},
         "files": {"enabled": False},
         "access_control": {"enabled": False}, "tenants": {"enabled": False}, "marketplace": {"enabled": False}}
+native_only = dict(good, mcp={"enabled": True}, rhai={"enabled": False}, typescript={"enabled": False})
+
+
+def no_scripts():
+    assert mcp_status() == 200
+    assert request("/api/runtime/enhancements")[0] == 404
+    status, _, body = request("/api/runtime/mcp", {"jsonrpc": "2.0", "id": 2, "method": "tools/list"})
+    assert status == 200 and json.loads(body)["result"]["tools"] == []
+    confirmed = record()["confirmed"]["value"]
+    assert not confirmed["rhai"]["enabled"] and not confirmed["typescript"]["enabled"]
+
+
+def script_restored(revision, saved_head):
+    status, _, body = request("/api/runtime/enhancements")
+    assert status == 200 and json.loads(body) == saved_head
+    status, _, body = request("/api/runtime/mcp", {"jsonrpc": "2.0", "id": 3, "method": "tools/call",
+        "params": {"name": "v1.process.double", "arguments": {"input": 21}}})
+    assert status == 200
+    result = json.loads(body)["result"]
+    assert result.get("isError") is not True
+    assert result["structuredContent"] == {"revision": revision, "output": 42}
+
+
 try:
     assert command("status").strip() == "null"
     assert not cache.exists()
-    configuration(good)
+    # 首次启动就不装配任何脚本语言，原生协议与身份服务仍可启动。
+    configuration(native_only)
     start()
     status, headers, _ = request("/api/auth/login", {
         "account": env["AIO_BOOTSTRAP_ACCOUNT"], "password": env["AIO_BOOTSTRAP_PASSWORD"],
     })
     assert status == 200
     cookie = headers["Set-Cookie"].split(";")[0]
+    no_scripts()
+    stop()
+    start()
+    no_scripts()
+    configuration(good)
+    until(lambda: mcp_status() == 404 and request("/api/runtime/enhancements")[0] == 200 and record()["attempt"] is None)
     assert mcp_status() == 404
     initial = json.loads(command("status"))
     assert initial["confirmed"]["value"]["mcp"]["enabled"] is False
     assert initial["confirmed"]["value"]["evolution"]["enabled"] is False
     command("restore", False)
     command("retry", False)
+
+    # 已发布版本在全部语言停用、进程强杀和单语言恢复后保持相同摘要和代数。
+    status, _, body = request("/api/runtime/enhancements/revisions", {"schema_version": 1, "enhancements": [{
+        "path": "/v1/process/double", "language": "rhai", "source": "fn invoke(input, context) { input * 2 }",
+        "examples": [{"input": 21, "output": 42}],
+    }]})
+    assert status == 200
+    revision = json.loads(body)["revision"]
+    status, _, body = request("/api/runtime/enhancements/active", {"revision": revision, "expected_generation": 0}, "PUT")
+    assert status == 200
+    saved_head = json.loads(body)
+    configuration(native_only)
+    until(lambda: mcp_status() == 200 and request("/api/runtime/enhancements")[0] == 404 and record()["attempt"] is None)
+    no_scripts()
+    process.kill()
+    assert process.wait(timeout=10) != 0
+    start()
+    no_scripts()
+    configuration(dict(good, mcp={"enabled": True}, typescript={"enabled": False}))
+    until(lambda: request("/api/runtime/enhancements")[0] == 200 and record()["attempt"] is None)
+    script_restored(revision, saved_head)
+    stop()
+    start()
+    script_restored(revision, saved_head)
+    configuration(good)
+    until(lambda: mcp_status() == 404 and record()["attempt"] is None)
 
     # 在线拒绝后重启，不能重新尝试或默认为全部能力启用。
     configuration({"schema_version": 9})
@@ -157,18 +213,20 @@ try:
     command("restore")
 
     # 初次资源初始化真实失败；下一个全新进程才加载最后成功组合。
-    no_executor = dict(good, rhai={"enabled": False}, typescript={"enabled": False})
-    configuration(no_executor)
-    launch()
+    blocked_storage = root / "blocked-storage"
+    blocked_storage.write_text("not a directory", encoding="utf-8")
+    storage_failure = {"AIO_FILE_STORAGE_DIR": str(blocked_storage)}
+    configuration(dict(good, files={"enabled": True}))
+    launch(storage_failure)
     assert process.wait(timeout=40) != 0
     failed = record()["attempt"]
     assert failed["rejected"]
-    start()
+    start(storage_failure)
     assert record()["attempt"] == failed
     assert mcp_status() == 404
     stop()
     command("retry")
-    launch()
+    launch(storage_failure)
     assert process.wait(timeout=40) != 0
     assert record()["attempt"]["id"] != failed["id"]
     command("restore")
@@ -241,7 +299,7 @@ try:
     command("restore", False)
     launch()
     assert process.wait(timeout=10) != 0
-    print("PASS: independent commands, process locks, online/startup failure, crash recovery, retry/restore, port conflict, durable write failure, corrupt record")
+    print("PASS: zero-language bootstrap, script suspension/restoration, independent commands, process locks, online/startup failure, crash recovery, retry/restore, port conflict, durable write failure, corrupt record")
     print("Artifacts: " + str(root))
 finally:
     if process is not None and process.poll() is None:

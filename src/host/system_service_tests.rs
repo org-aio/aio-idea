@@ -79,7 +79,7 @@ pub(super) async fn verify(
     ));
     assert_services_closed(&old).await?;
     assert_eq!(mcp(client, base, cookie).await?, 200);
-    assert_eq!(grpc(client, base, cookie).await?, 200);
+    assert_eq!(grpc(client, base, cookie).await?, tonic::Code::Ok);
 
     apply(control, host, json!({"schema_version":1})).await?;
     let restored = latest(generations)?;

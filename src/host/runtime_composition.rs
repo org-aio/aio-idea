@@ -6,8 +6,8 @@ use anyhow::{Context, Result, ensure};
 use az_plugin_core::{DynPlugin, Plugin};
 use az_plugin_host::recovery::{ConfigurationJournal, configuration_digest, read_configuration};
 use az_plugin_host::runtime::server::plugins::{
-    DatabasePlugin, EvolutionPlugin, GrpcPlugin, McpPlugin, RhaiPlugin, RuntimeAssembly,
-    RuntimeHost, TypeScriptPlugin,
+    DatabasePlugin, EnhancementServicePlugin, EnhancementsPlugin, EvolutionPlugin, GrpcPlugin,
+    McpPlugin, RhaiPlugin, RuntimeAssembly, RuntimeHost, ScriptRuntimePlugin, TypeScriptPlugin,
 };
 use serde::{Deserialize, Serialize};
 
@@ -182,10 +182,46 @@ fn select_plugins(
     );
     select(&mut plugins, &previous.mcp, &next.mcp, McpPlugin);
     select(&mut plugins, &previous.grpc, &next.grpc, GrpcPlugin);
+    // 脚本服务随可用语言装配；语言重启引发的依赖重建仍由运行时处理。
+    let previous_scripts = Capability {
+        enabled: previous.rhai.enabled || previous.typescript.enabled,
+        restart: 0,
+    };
+    let next_scripts = Capability {
+        enabled: next.rhai.enabled || next.typescript.enabled,
+        restart: 0,
+    };
     select(
         &mut plugins,
-        &previous.evolution,
-        &next.evolution,
+        &previous_scripts,
+        &next_scripts,
+        ScriptRuntimePlugin,
+    );
+    select(
+        &mut plugins,
+        &previous_scripts,
+        &next_scripts,
+        EnhancementServicePlugin,
+    );
+    select(
+        &mut plugins,
+        &previous_scripts,
+        &next_scripts,
+        EnhancementsPlugin,
+    );
+    // 保留部署方的演进开关；语言全部停用时暂停，语言恢复后再按原开关装配。
+    let previous_evolution = Capability {
+        enabled: previous.evolution.enabled && previous_scripts.enabled,
+        ..previous.evolution.clone()
+    };
+    let next_evolution = Capability {
+        enabled: next.evolution.enabled && next_scripts.enabled,
+        ..next.evolution.clone()
+    };
+    select(
+        &mut plugins,
+        &previous_evolution,
+        &next_evolution,
         EvolutionPlugin,
     );
     select(&mut plugins, &previous.files, &next.files, FilePlugin);

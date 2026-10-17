@@ -3,6 +3,8 @@
 use super::*;
 use serde_json::{Value, json};
 
+#[path = "script_service_tests.rs"]
+mod script_services;
 #[path = "system_service_tests.rs"]
 mod system_services;
 
@@ -83,9 +85,10 @@ async fn deployment_composition_switches_protocols_and_rebuilds_identity_without
         .context("会话为空")?
         .to_owned();
     assert_eq!(mcp(&client, &base, &cookie).await?, 200);
-    assert_eq!(grpc(&client, &base, &cookie).await?, 200);
+    assert_eq!(grpc(&client, &base, &cookie).await?, tonic::Code::Ok);
     assert_snapshot(&client, &base, &cookie).await?;
     system_services::verify(&mut control, &host, &client, &base, &cookie, &generations).await?;
+    script_services::verify(&mut control, &host, &client, &base, &cookie, &generations).await?;
 
     apply(
         &mut control,
@@ -94,7 +97,7 @@ async fn deployment_composition_switches_protocols_and_rebuilds_identity_without
     )
     .await?;
     assert_eq!(mcp(&client, &base, &cookie).await?, 404);
-    assert_eq!(grpc(&client, &base, &cookie).await?, 200);
+    assert_eq!(grpc(&client, &base, &cookie).await?, tonic::Code::Ok);
     let before_identity = system_services::latest(&generations)?;
     apply(
         &mut control,
@@ -105,7 +108,24 @@ async fn deployment_composition_switches_protocols_and_rebuilds_identity_without
     system_services::identity_rebuilt(&before_identity, &system_services::latest(&generations)?)
         .await?;
     assert_eq!(mcp(&client, &base, &cookie).await?, 200);
-    assert_eq!(grpc(&client, &base, &cookie).await?, 404);
+    assert_eq!(
+        grpc(&client, &base, &cookie).await?,
+        tonic::Code::Unimplemented
+    );
+    for path in [
+        "/aio.runtime.v1.Capabilities/List",
+        "/unknown.Service/Invoke",
+    ] {
+        let response = client
+            .post(format!("{base}{path}"))
+            .header("Content-Type", "application/grpc+proto")
+            .body(vec![0; 5])
+            .send()
+            .await?;
+        assert_eq!(response.status(), 200);
+        assert_eq!(response.headers().get("grpc-status"), Some(&"12".parse()?));
+        assert!(response.bytes().await?.is_empty());
+    }
     assert_snapshot(&client, &base, &cookie).await?;
 
     let before = control.plugins.clone();
@@ -130,11 +150,14 @@ async fn deployment_composition_switches_protocols_and_rebuilds_identity_without
             .all(|(left, right)| Arc::ptr_eq(left, right))
     );
     assert_eq!(mcp(&client, &base, &cookie).await?, 200);
-    assert_eq!(grpc(&client, &base, &cookie).await?, 404);
+    assert_eq!(
+        grpc(&client, &base, &cookie).await?,
+        tonic::Code::Unimplemented
+    );
 
     apply(&mut control, &host, json!({"schema_version":1,"rhai":{"restart":1},"typescript":{"restart":1},"database":{"restart":1},"identity":{"restart":2}})).await?;
     assert_eq!(mcp(&client, &base, &cookie).await?, 200);
-    assert_eq!(grpc(&client, &base, &cookie).await?, 200);
+    assert_eq!(grpc(&client, &base, &cookie).await?, tonic::Code::Ok);
     assert_snapshot(&client, &base, &cookie).await?;
     tokio::fs::write(
         root.path().join("pending.json"),
@@ -190,7 +213,7 @@ async fn mcp(client: &reqwest::Client, base: &str, cookie: &str) -> Result<reqwe
     Ok(status)
 }
 
-async fn grpc(client: &reqwest::Client, base: &str, cookie: &str) -> Result<reqwest::StatusCode> {
+async fn grpc(client: &reqwest::Client, base: &str, cookie: &str) -> Result<tonic::Code> {
     let response = client
         .post(format!("{base}/aio.runtime.v1.Enhancements/List"))
         .header("Cookie", cookie)
@@ -198,27 +221,28 @@ async fn grpc(client: &reqwest::Client, base: &str, cookie: &str) -> Result<reqw
         .body(vec![0; 5])
         .send()
         .await?;
-    if response.status() == 200 {
-        assert_eq!(
-            response
-                .headers()
-                .get("Content-Type")
-                .context("缺少协议类型")?,
-            "application/grpc"
-        );
-        // gRPC 错误也可能返回 HTTP 200，使用正式客户端验证数据帧和最终状态。
-        use az_plugin_contract::grpc::{ListRequest, enhancements_client::EnhancementsClient};
-        let channel = tonic::transport::Endpoint::from_shared(base.to_owned())?
-            .connect_timeout(Duration::from_secs(5))
-            .timeout(Duration::from_secs(10))
-            .connect()
-            .await?;
-        let mut grpc = EnhancementsClient::new(channel);
-        let mut request = tonic::Request::new(ListRequest {});
-        request.metadata_mut().insert("cookie", cookie.parse()?);
-        grpc.list(request).await?;
-    }
-    Ok(response.status())
+    assert_eq!(response.status(), 200);
+    assert_eq!(
+        response
+            .headers()
+            .get("Content-Type")
+            .context("缺少协议类型")?,
+        "application/grpc"
+    );
+    // HTTP 200 同时承载成功和错误，正式客户端验证数据帧与最终 gRPC 状态。
+    use az_plugin_contract::grpc::{ListRequest, enhancements_client::EnhancementsClient};
+    let channel = tonic::transport::Endpoint::from_shared(base.to_owned())?
+        .connect_timeout(Duration::from_secs(5))
+        .timeout(Duration::from_secs(10))
+        .connect()
+        .await?;
+    let mut grpc = EnhancementsClient::new(channel);
+    let mut request = tonic::Request::new(ListRequest {});
+    request.metadata_mut().insert("cookie", cookie.parse()?);
+    Ok(match grpc.list(request).await {
+        Ok(_) => tonic::Code::Ok,
+        Err(error) => error.code(),
+    })
 }
 
 async fn assert_snapshot(client: &reqwest::Client, base: &str, cookie: &str) -> Result<()> {
