@@ -30,12 +30,16 @@ pub async fn run() -> Result<()> {
     let listener = tokio::net::TcpListener::bind(address)
         .await
         .with_context(|| format!("绑定监听地址失败: {address}"))?;
-    let config = crate::host::configuration()?;
+    let (config, bootstrap_components) = crate::host::configuration()?;
     // 在连接业务数据库前持久化候选；端口冲突则不会污染候选记录。
     let bootstrap = crate::host::RuntimeBootstrap::load(&config.cache_root)?;
     let mut runtime_plugins = runtime::server::plugins::default_plugins()?;
     runtime_plugins.extend(plugins::server::server_plugins()?);
     runtime_plugins.push(std::sync::Arc::new(crate::host::ProductIdentityPlugin));
+    if !bootstrap_components.is_empty() {
+        let bootstrap = runtime::server::plugins::ComponentBootstrapPlugin(bootstrap_components);
+        runtime_plugins.push(std::sync::Arc::new(bootstrap));
+    }
     let (runtime, mut composition) = bootstrap
         .start(config, runtime_plugins, move |state, runtime| {
             application::router(state, runtime, web_dist.clone())
