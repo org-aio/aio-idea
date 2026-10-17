@@ -55,7 +55,7 @@ async fn system_management_browser_workflows() -> Result<()> {
     }
     let mut results = Vec::new();
     let test_run = format!("admin-test-{}", uuid::Uuid::new_v4().simple());
-    for script in ["admin-files.cjs", "admin-rbac.cjs", "admin-account.cjs"] {
+    for script in ["admin-rbac.cjs", "admin-account.cjs"] {
         let status = tokio::process::Command::new("node")
             .arg(format!("tests/browser/{script}"))
             .env("AIO_URL", &base)

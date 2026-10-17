@@ -2,7 +2,6 @@
 
 use std::sync::Mutex;
 
-use aio_plugin_file_server::{FileService, FileServiceImpl};
 use aio_plugin_identity_server::IdentityService;
 use aio_plugin_rbac_server::AccessControlService;
 use aio_plugin_tenant_server::TenantService;
@@ -19,19 +18,24 @@ pub(super) async fn verify(
     generations: &Mutex<Vec<RuntimeState>>,
 ) -> Result<()> {
     let old = latest(generations)?;
-    let uploaded = client
-        .post(format!("{base}/api/files"))
+    let before = client
+        .get(format!("{base}/api/rbac"))
         .header("Cookie", cookie)
-        .header("Content-Type", "text/plain")
-        .query(&[("filename", "lifecycle.txt")])
-        .body("persistent plugin data")
         .send()
         .await?
         .error_for_status()?
         .json::<Value>()
         .await?;
-    let file_id = uploaded["data"]["id"].as_str().context("缺少文件 ID")?;
-    let paths = ["/api/files", "/api/rbac", "/api/tenants"];
+    let paths = ["/api/rbac", "/api/tenants"];
+    assert_eq!(
+        client
+            .get(format!("{base}/api/files"))
+            .header("Cookie", cookie)
+            .send()
+            .await?
+            .status(),
+        404
+    );
     for path in paths {
         assert_eq!(
             client
@@ -49,7 +53,6 @@ pub(super) async fn verify(
         host,
         json!({
             "schema_version": 1,
-            "files": {"enabled": false},
             "access_control": {"enabled": false},
             "tenants": {"enabled": false},
         }),
@@ -78,18 +81,18 @@ pub(super) async fn verify(
     apply(control, host, json!({"schema_version":1})).await?;
     let restored = latest(generations)?;
     assert!(!Arc::ptr_eq(
-        &old.service::<FileServiceImpl>()?,
-        &restored.service::<FileServiceImpl>()?
+        &old.service::<AccessControlService>()?,
+        &restored.service::<AccessControlService>()?
     ));
-    let body = client
-        .get(format!("{base}/api/files/{file_id}"))
+    let after = client
+        .get(format!("{base}/api/rbac"))
         .header("Cookie", cookie)
         .send()
         .await?
         .error_for_status()?
-        .text()
+        .json::<Value>()
         .await?;
-    assert_eq!(body, "persistent plugin data");
+    assert_eq!(before, after, "权限数据跨服务重建保留");
     for path in paths {
         assert_eq!(
             client
@@ -100,14 +103,6 @@ pub(super) async fn verify(
                 .status(),
             200
         );
-    }
-    for path in [format!("/api/files/{file_id}")] {
-        client
-            .delete(format!("{base}{path}"))
-            .header("Cookie", cookie)
-            .send()
-            .await?
-            .error_for_status()?;
     }
     Ok(())
 }
@@ -127,10 +122,6 @@ pub(super) async fn identity_rebuilt(old: &RuntimeState, next: &RuntimeState) ->
         &next.service::<IdentityService>()?
     ));
     assert!(!Arc::ptr_eq(
-        &old.service::<FileServiceImpl>()?,
-        &next.service::<FileServiceImpl>()?
-    ));
-    assert!(!Arc::ptr_eq(
         &old.service::<AccessControlService>()?,
         &next.service::<AccessControlService>()?
     ));
@@ -142,7 +133,6 @@ pub(super) async fn identity_rebuilt(old: &RuntimeState, next: &RuntimeState) ->
 }
 
 async fn assert_services_closed(state: &RuntimeState) -> Result<()> {
-    assert_pool_closed(state.service::<FileServiceImpl>()?.list("default").await)?;
     assert_pool_closed(
         state
             .service::<AccessControlService>()?

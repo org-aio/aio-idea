@@ -38,7 +38,7 @@ env = {key: value for key, value in os.environ.items() if not key.startswith("AI
 env.update({
     "AIO_DATABASE_URL": database, "AIO_COMPONENT_DATABASE_URL": database,
     "AIO_COMPONENT_HOME": str(root / "components"), "AIO_PLUGIN_CACHE": str(root / "cache"),
-    "AIO_CONFIG": str(config), "AIO_FILE_STORAGE_DIR": str(root / "files"),
+    "AIO_CONFIG": str(config),
     "AIO_PROCESS_ROOT": str(root / "processes"),
     "AIO_PLUGIN_SUPERVISOR_SOCKET": str(root / "absent-supervisor.sock"),
     "AIO_RUNTIME_COMPOSITION": str(source), "AIO_PUBLIC_ORIGIN": base,
@@ -119,7 +119,7 @@ def stop():
 def configure(enabled, trusted=()):
     composition = {"schema_version": 1, "wasm": {"enabled": enabled},
         **{key: {"enabled": False} for key in ["sidecar", "rhai", "typescript", "evolution",
-                                               "files", "access_control", "tenants"]},
+                                               "access_control", "tenants"]},
         "trusted_management_components": [{"git": git, "digest": bundle[1]} for bundle in trusted]}
     pending = source.with_suffix(".pending")
     pending.write_text(json.dumps(composition), encoding="utf-8")

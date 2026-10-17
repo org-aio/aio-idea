@@ -10,7 +10,7 @@ fn retired_system_settings_migrate_without_reenabling_other_services() -> Result
     let root = tempfile::tempdir()?;
     let source = root.path().join("composition.json");
     let cache = root.path().join("cache");
-    let old = json!({"schema_version":1,"dictionary":{"enabled":false,"restart":3},"marketplace":{"enabled":false,"restart":2},"files":{"enabled":false},"mcp":{"enabled":false}});
+    let old = json!({"schema_version":1,"dictionary":{"enabled":false,"restart":3},"marketplace":{"enabled":false,"restart":2},"files":{"enabled":false},"access_control":{"enabled":false},"mcp":{"enabled":false}});
     let bytes = serde_json::to_vec(&old)?;
     fs::write(&source, &bytes)?;
     let mut journal = ConfigurationJournal::open(&cache.join("runtime-composition"), &source)?;
@@ -21,7 +21,7 @@ fn retired_system_settings_migrate_without_reenabling_other_services() -> Result
     assert!(parse(br#"{"schema_version":1,"marketplace":{"enabled":true}}"#).is_err());
     assert!(migrate_saved(br#"{"schema_version":1,"marketplace":{"enabled":"invalid"}}"#).is_err());
     let recovered = RuntimeBootstrap::open(Some(source.clone()), &cache)?;
-    assert!(!recovered.selected.files.enabled);
+    assert!(!recovered.selected.access_control.enabled);
     assert!(!recovered.selected.mcp.enabled);
     assert!(
         execute("migrate", &source, &cache).is_err(),
@@ -30,7 +30,7 @@ fn retired_system_settings_migrate_without_reenabling_other_services() -> Result
     drop(recovered);
     execute("migrate", &source, &cache)?;
     let selected = parse(&read_configuration(&source)?)?;
-    assert!(!selected.files.enabled);
+    assert!(!selected.access_control.enabled);
     assert!(!selected.mcp.enabled);
     let record = ConfigurationJournal::inspect(&cache.join("runtime-composition"), &source)?
         .context("缺少恢复记录")?;
@@ -48,6 +48,9 @@ fn retired_system_settings_migrate_without_reenabling_other_services() -> Result
         .clone();
     assert!(confirmed.get("dictionary").is_none());
     assert!(confirmed.get("marketplace").is_none());
+    assert!(confirmed.get("files").is_none());
+    assert!(parse(br#"{"schema_version":1,"files":{"enabled":true}}"#).is_err());
+    assert!(migrate_saved(br#"{"schema_version":1,"files":{"enabled":"invalid"}}"#).is_err());
     Ok(())
 }
 

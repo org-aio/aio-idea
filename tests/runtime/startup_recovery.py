@@ -35,7 +35,6 @@ recovery_env = dict(base_env, AIO_RUNTIME_COMPOSITION=str(source), AIO_PLUGIN_CA
 env = dict(recovery_env, **{
     "AIO_DATABASE_URL": database,
     "AIO_CONFIG": str(root / "aio.toml"),
-    "AIO_FILE_STORAGE_DIR": str(root / "files"),
     "AIO_PROCESS_ROOT": str(root / "processes"),
     "AIO_PLUGIN_SUPERVISOR_SOCKET": str(root / "absent-supervisor.sock"),
     "AIO_PUBLIC_ORIGIN": origin,
@@ -124,7 +123,7 @@ def command(name, success=True):
 
 
 good = {"schema_version": 1, "mcp": {"enabled": False}, "evolution": {"enabled": False},
-        "files": {"enabled": False},
+        "wasm": {"enabled": False},
         "access_control": {"enabled": False}, "tenants": {"enabled": False}}
 native_only = dict(good, mcp={"enabled": True}, rhai={"enabled": False}, typescript={"enabled": False})
 
@@ -213,10 +212,10 @@ try:
     command("restore")
 
     # 初次资源初始化真实失败；下一个全新进程才加载最后成功组合。
-    blocked_storage = root / "blocked-storage"
+    blocked_storage = cache / "compiled"
     blocked_storage.write_text("not a directory", encoding="utf-8")
-    storage_failure = {"AIO_FILE_STORAGE_DIR": str(blocked_storage)}
-    configuration(dict(good, files={"enabled": True}))
+    storage_failure = {}
+    configuration(dict(good, wasm={"enabled": True}))
     launch(storage_failure)
     assert process.wait(timeout=40) != 0
     failed = record()["attempt"]

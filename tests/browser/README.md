@@ -50,7 +50,7 @@ Cookie 文件采用 curl 的 Netscape 格式，仅保存在本机。也可通过
 
 `counter-state.cjs` 同时被 `frontend.cjs` 和线上 `public-admin.cjs` 使用：Dioxus 本地 `+1` 在联网和断网连续点击时均不发请求；真实后端请求暂停期间，本地计数仍即时响应。显式「请求后端 +1」单独验证 Component 和租户透传，不将 UI 事件当成后端事件。
 
-`admin-files.cjs`、`admin-rbac.cjs`、`admin-account.cjs` 通过 `system_management_browser_workflows` 测试启动真实系统插件接口，验证列表、搜索、排序、分页、表单、删除、权限撤销、密码及租户切换。仅允许本机 `aio_keepalive_test` 数据库，测试创建的临时租户由宿主清理；不要对生产环境运行这些写入用例。截图及报告位于 `target/admin-ui-test`。设置 `AIO_ADMIN_PREVIEW_PORT` 可启动隔离开发预览。
+`admin-rbac.cjs`、`admin-account.cjs` 通过 `system_management_browser_workflows` 测试启动真实系统插件接口，验证列表、搜索、排序、分页、表单、删除、权限撤销、密码及租户切换。仅允许本机 `aio_keepalive_test` 数据库，测试创建的临时租户由宿主清理；不要对生产环境运行这些写入用例。截图及报告位于 `target/admin-ui-test`。设置 `AIO_ADMIN_PREVIEW_PORT` 可启动隔离开发预览。
 
 字典已迁移到独立 v2 整包，真实 iframe 的桌面/手机 CRUD、样式和部分失败重试验收在 [字典仓库](https://github.com/org-aio/aio-plugin-dictionary/blob/main/tests/README.md) 维护。宿主不再保留依赖静态字典 API 的副本。
 
@@ -87,3 +87,5 @@ AIO_URL=https://aio.addzero.site AIO_COOKIE_FILE=/path/to/private-cookie.txt nod
 ## 普通插件市场删除
 
 先使用 `dx serve --platform web` 生成当前 Web 产物，再运行 `node tests/browser/marketplace-removal.cjs`。可通过 `AIO_WEB_ROOT` 指定产物目录。测试使用隔离 HTTP 夹具，不删除生产插件，覆盖桌面/手机权限入口、二次确认与取消、服务端失败重试和删除后列表刷新；截图保存在 `target/marketplace-removal-test`。需要 Node 能解析 Playwright 和本机 Chrome。真实权限与持久化由宿主的 `marketplace_removal` PostgreSQL 测试覆盖。
+
+文件能力由独立 Sidecar 整包提供，文件上传、下载、图床、权限及浏览器验收位于 [文件插件测试](https://github.com/org-aio/aio-plugin-file/blob/main/tests/README.md)。本宿主不再注册原生文件接口。

@@ -38,7 +38,7 @@ env = {key: value for key, value in os.environ.items() if not key.startswith("AI
 env.update({
     "AIO_DATABASE_URL": database, "AIO_COMPONENT_DATABASE_URL": database,
     "AIO_COMPONENT_HOME": str(root / "components"), "AIO_PLUGIN_CACHE": str(root / "cache"),
-    "AIO_CONFIG": str(root / "aio.toml"), "AIO_FILE_STORAGE_DIR": str(root / "files"),
+    "AIO_CONFIG": str(root / "aio.toml"),
     "AIO_PROCESS_ROOT": str(root / "processes"),
     "AIO_PROCESS_IMAGES": os.environ["AIO_EXECUTOR_TEST_PROCESS_IMAGES"],
     "AIO_PLUGIN_SUPERVISOR_SOCKET": str(root / "supervisor.sock"),

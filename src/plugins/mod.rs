@@ -16,7 +16,6 @@ pub fn client_catalog() -> anyhow::Result<ClientCatalog> {
     let mut builder = CatalogBuilder::new();
     aio_plugin_identity_client::register(&mut builder);
     aio_plugin_rbac_client::register(&mut builder);
-    aio_plugin_file_client::register(&mut builder);
     aio_plugin_settings::register(&mut builder);
     aio_plugin_account::register(&mut builder);
     aio_plugin_tenant_client::register(&mut builder);
@@ -59,7 +58,6 @@ mod tests {
         for page_id in [
             "users",
             "roles",
-            "file-list",
             "profile",
             "settings",
             "tenants",
@@ -115,21 +113,7 @@ mod tests {
         );
         assert_eq!(space.required_permission, None);
 
-        let files = catalog
-            .pages
-            .iter()
-            .find(|page| page.id == "file-list")
-            .expect("缺少文件管理页面");
-        assert_eq!(files.scene.id, "system");
-        assert_eq!(
-            files
-                .menu_path
-                .iter()
-                .map(|group| group.id.as_str())
-                .collect::<Vec<_>>(),
-            ["infrastructure", "file-management"]
-        );
-        assert_eq!(files.required_permission, Some("file:manage"));
+        assert!(!page_ids.contains("file-list"), "文件页面由安装整包贡献");
         for account_id in ["profile", "settings", "tenant-switcher", "logout"] {
             assert!(
                 account_ids.contains(account_id),

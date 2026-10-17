@@ -14,7 +14,7 @@ Rhai 与 TypeScript 通过统一 `call_capability` 使用这些能力，仍要�
 
 双语言策略和安装示例在平台 `docs/plugin/evolution/`。模型能力独立提供；此产品没有配置默认模型、自动批准或后台演进调度。调用计数按租户、版本和激活代数持久化，源码回滚不包含业务数据回滚。
 
-`plugins/server.rs` 将身份、文件、权限和租户服务贡献到运行时的同一个 Dill 容器。每代先创建资源并登记关闭责任，再初始化和装配原有 Controller；初始化或路由装配失败由生命周期补偿。停用会移除路由并关闭对应连接池，重新启用创建新实例，业务数据保留。市场页面和管理动作由独立整包通过公共宿主契约提供。
+`plugins/server.rs` 将身份、权限和租户服务贡献到运行时的同一个 Dill 容器。每代先创建资源并登记关闭责任，再初始化和装配原有 Controller；初始化或路由装配失败由生命周期补偿。停用会移除路由并关闭对应连接池，重新启用创建新实例，业务数据保留。市场页面和管理动作由独立整包通过公共宿主契约提供。
 
 字典通过市场独立安装 v2 Sidecar 整包，目录、前端、业务进程与数据库迁移均属于该包。`required_permissions` 保留宿主 `dictionary:manage` 门槛，普通租户成员不能通过安装获取管理权限；发现、挂载和请求实时检查授权。产品不注册 `/api/dictionaries`，不链接字典实现。旧数据需要按 [字典迁移步骤](https://github.com/org-aio/aio-plugin-dictionary/blob/main/tests/README.md) 显式复制，不双写旧表。
 
@@ -36,7 +36,6 @@ Rhai 与 TypeScript 通过统一 `call_capability` 使用这些能力，仍要�
   "mcp": { "enabled": true, "restart": 0 },
   "grpc": { "enabled": true, "restart": 0 },
   "evolution": { "enabled": true, "restart": 0 },
-  "files": { "enabled": true, "restart": 0 },
   "access_control": { "enabled": true, "restart": 0 },
   "tenants": { "enabled": true, "restart": 0 },
   "identity": { "restart": 0 },
@@ -44,7 +43,7 @@ Rhai 与 TypeScript 通过统一 `call_capability` 使用这些能力，仍要�
 }
 ```
 
-未填写的能力默认启用，`restart` 默认 0。改变某项的 `restart` 会重建该项及依赖它的插件；未变配方保留 Arc 身份和无关单例。字段表示产品支持的部署选项，原生插件注册和依赖身份仍使用 TypeId。身份服务和数据库是当前产品的必需资源，只允许重建；脚本语言、Wasm/Sidecar 执行器、协议入口、演进控制及三项可选系统服务可以启停。停用某种语言后，依赖它的增强不可执行，已保存版本不会被删除。停用这些原生系统服务时对应 API 返回 404，静态 UI 菜单目前仍会显示。字典和市场整包的启停由租户安装记录管理，其菜单跟随包生命周期。
+未填写的能力默认启用，`restart` 默认 0。改变某项的 `restart` 会重建该项及依赖它的插件；未变配方保留 Arc 身份和无关单例。字段表示产品支持的部署选项，原生插件注册和依赖身份仍使用 TypeId。身份服务和数据库是当前产品的必需资源，只允许重建；脚本语言、Wasm/Sidecar 执行器、协议入口、演进控制及权限和租户两项可选系统服务可以启停。停用某种语言后，依赖它的增强不可执行，已保存版本不会被删除。停用这些原生系统服务时对应 API 返回 404，静态 UI 菜单目前仍会显示。字典、市场和文件整包的启停由租户安装记录管理，其菜单跟随包生命周期。
 
 `wasm` 与 `sidecar` 同时控制各自的 v1/v2 执行器。停用执行器会释放实例，保留租户的启用意图、安装摘要、激活代数及回滚排除记录；目录显示 `suspended`，页面、账户与设置入口以及组件权限不再提供。管理面保留，允许停用或卸载；发布、安装和启用仍要求匹配的执行器。恢复执行器只加载租户已经选择的版本，明确停用的插件继续停用。缺少执行器与实例恢复失败不同：摘要损坏、重复匹配和启动错误仍会使候选失败并触发恢复。自动交付暂缓暂停实例的升级，恢复后继续遵守租户回滚选择。
 
@@ -76,11 +75,11 @@ aio-idea runtime status
 aio-idea runtime retry
 # 停服后按当前契约校验并原子写回最后成功组合。
 aio-idea runtime restore
-# 停服后迁移旧部署文件中的 dictionary、marketplace 字段，其他选项保持不变。
+# 停服后迁移旧部署文件中的 dictionary、marketplace、files 字段，其他选项保持不变。
 aio-idea runtime migrate
 ```
 
-`status` 在服务运行时也可读取，输出持久化 JSON 快照或 `null`，不表示进程健康。`retry`、`restore`、`migrate` 必须取得独占锁，宿主存活时拒绝执行。自动回退从不改写部署文件；`restore` 与 `migrate` 原子写入候选，实际启动成功前保留旧的最后成功记录。已保存旧记录中的 `dictionary`、`marketplace` 会校验并移除，其他停用状态保留；新部署输入直接拒绝这些退役字段。迁移不自动安装或启用整包，原来停用的租户应保持整包停用。
+`status` 在服务运行时也可读取，输出持久化 JSON 快照或 `null`，不表示进程健康。`retry`、`restore`、`migrate` 必须取得独占锁，宿主存活时拒绝执行。自动回退从不改写部署文件；`restore` 与 `migrate` 原子写入候选，实际启动成功前保留旧的最后成功记录。已保存旧记录中的 `dictionary`、`marketplace`、`files` 会校验并移除，其他停用状态保留；新部署输入直接拒绝这些退役字段。迁移不自动安装或启用整包，原来停用的租户应保持整包停用。
 
 市场页面和账户入口由独立 [aio-plugin-marketplace](https://github.com/org-aio/aio-plugin-marketplace) v2 整包贡献；产品不再链接其 client/server，也不提供空的 `/api/plugins/marketplace` 路由。升级到此版本前，按市场 README 构建整包、审核摘要并配置 `trusted_management_components` 与 `bootstrap_components`，首次启动即可取得管理入口。未配置或未获信任时不显示市场入口；宿主不会内置另一份市场或自动授予包管理权限。
 
@@ -89,3 +88,5 @@ aio-idea runtime migrate
 阅读顺序：`runtime_bootstrap.rs` 的启动选择 → `runtime_composition.rs` 的在线提交 → `runtime_recovery.rs` 的本机恢复。无需数据库的配置测试使用 `cargo test --no-default-features --features server runtime_composition::bootstrap`；真实进程验收见 `tests/runtime/README.md`。
 
 `device_tunnels` 同样支持 `{ "enabled": true, "restart": 0 }` 的原生能力开关。服务目录、独立访问网关和活动隧道由 device 插件拥有；停用时释放监听并断开连接。部署需按 [device 服务端说明](https://github.com/org-aio/aio-plugin-device/blob/main/server/README.md) 配置独立域名。
+
+文件管理通过独立 v2 Sidecar 整包安装，宿主不再链接文件 client/server、注册文件页面或提供 `/api/files`、旧根 `/i/{token}`。升级前须按 [文件迁移说明](https://github.com/org-aio/aio-plugin-file/blob/main/tests/README.md) 复制旧数据、核对摘要并更新公开链接；运行时配置迁移不替代业务数据迁移。

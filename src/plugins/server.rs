@@ -2,7 +2,6 @@
 
 use std::sync::Arc;
 
-use aio_plugin_file_server::{FileController, FileService, FileServiceImpl};
 use aio_plugin_identity_server::IdentityService;
 use aio_plugin_rbac_server::AccessControlService;
 use aio_plugin_tenant_server::TenantService;
@@ -57,14 +56,6 @@ service_plugin!(
     aio_plugin_identity_server::router
 );
 service_plugin!(
-    FilePlugin,
-    FileServiceImpl,
-    [dyn FileService],
-    [FileController],
-    [IdentityService],
-    aio_plugin_file_server::router
-);
-service_plugin!(
     AccessControlPlugin,
     AccessControlService,
     [],
@@ -86,7 +77,6 @@ pub fn server_plugins() -> Result<Vec<DynPlugin<RuntimeAssembly>>> {
     let mut builder = dill::CatalogBuilder::new();
     builder
         .add::<IdentityServicePlugin>()
-        .add::<FilePlugin>()
         .add::<AccessControlPlugin>()
         .add::<TenantPlugin>()
         .add::<aio_plugin_device_server::DeviceWebviewsPlugin>()
