@@ -31,12 +31,7 @@ pub(super) async fn verify(
         .json::<Value>()
         .await?;
     let file_id = uploaded["data"]["id"].as_str().context("缺少文件 ID")?;
-    let paths = [
-        "/api/files",
-        "/api/rbac",
-        "/api/tenants",
-        "/api/plugins/marketplace",
-    ];
+    let paths = ["/api/files", "/api/rbac", "/api/tenants"];
     for path in paths {
         assert_eq!(
             client
@@ -57,7 +52,6 @@ pub(super) async fn verify(
             "files": {"enabled": false},
             "access_control": {"enabled": false},
             "tenants": {"enabled": false},
-            "marketplace": {"enabled": false},
         }),
     )
     .await?;

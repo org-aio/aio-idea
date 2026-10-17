@@ -6,18 +6,20 @@ use super::*;
 use crate::host::runtime_composition::recovery::execute;
 
 #[test]
-fn retired_dictionary_setting_migrates_without_reenabling_other_services() -> Result<()> {
+fn retired_system_settings_migrate_without_reenabling_other_services() -> Result<()> {
     let root = tempfile::tempdir()?;
     let source = root.path().join("composition.json");
     let cache = root.path().join("cache");
-    let old = json!({"schema_version":1,"dictionary":{"enabled":false,"restart":3},"files":{"enabled":false},"mcp":{"enabled":false}});
+    let old = json!({"schema_version":1,"dictionary":{"enabled":false,"restart":3},"marketplace":{"enabled":false,"restart":2},"files":{"enabled":false},"mcp":{"enabled":false}});
     let bytes = serde_json::to_vec(&old)?;
     fs::write(&source, &bytes)?;
     let mut journal = ConfigurationJournal::open(&cache.join("runtime-composition"), &source)?;
     let attempt = journal.begin(configuration_digest(&bytes))?;
     journal.confirm(&attempt, old.clone())?;
     drop(journal);
-    assert!(parse(&bytes).is_err(), "新输入不能继续冒充原生字典开关");
+    assert!(parse(&bytes).is_err(), "新输入不能继续使用退役系统开关");
+    assert!(parse(br#"{"schema_version":1,"marketplace":{"enabled":true}}"#).is_err());
+    assert!(migrate_saved(br#"{"schema_version":1,"marketplace":{"enabled":"invalid"}}"#).is_err());
     let recovered = RuntimeBootstrap::open(Some(source.clone()), &cache)?;
     assert!(!recovered.selected.files.enabled);
     assert!(!recovered.selected.mcp.enabled);
@@ -36,17 +38,16 @@ fn retired_dictionary_setting_migrates_without_reenabling_other_services() -> Re
     let mut restarted = RuntimeBootstrap::open(Some(source), &cache)?;
     assert!(restarted.attempt.is_some());
     confirm(&mut restarted)?;
-    assert!(
-        restarted
-            .journal
-            .as_ref()
-            .context("缺少日志")?
-            .confirmed()
-            .context("缺少成功组合")?
-            .value
-            .get("dictionary")
-            .is_none()
-    );
+    let confirmed = restarted
+        .journal
+        .as_ref()
+        .context("缺少日志")?
+        .confirmed()
+        .context("缺少成功组合")?
+        .value
+        .clone();
+    assert!(confirmed.get("dictionary").is_none());
+    assert!(confirmed.get("marketplace").is_none());
     Ok(())
 }
 

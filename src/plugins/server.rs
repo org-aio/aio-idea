@@ -81,25 +81,6 @@ service_plugin!(
     aio_plugin_tenant_server::router
 );
 
-/// 市场插件不持有外部资源，其路由仍由所选插件贡献。
-#[dill::component]
-#[dill::interface(dyn Plugin<RuntimeAssembly>)]
-pub struct MarketplacePlugin;
-
-impl Plugin<RuntimeAssembly> for MarketplacePlugin {
-    fn build<'a>(&'a self, assembly: &'a mut RuntimeAssembly) -> PluginFuture<'a> {
-        Box::pin(async move {
-            assembly
-                .services
-                .add_value(aio_plugin_marketplace_server::MarketplaceService);
-            assembly.add_routes(|state| {
-                Ok(aio_plugin_marketplace_server::router(state.catalog())?.with_state(()))
-            });
-            Ok(())
-        })
-    }
-}
-
 /// 产品只选择具体插件类型，服务创建和初始化全部交给 RuntimeHost。
 pub fn server_plugins() -> Result<Vec<DynPlugin<RuntimeAssembly>>> {
     let mut builder = dill::CatalogBuilder::new();
@@ -107,8 +88,7 @@ pub fn server_plugins() -> Result<Vec<DynPlugin<RuntimeAssembly>>> {
         .add::<IdentityServicePlugin>()
         .add::<FilePlugin>()
         .add::<AccessControlPlugin>()
-        .add::<TenantPlugin>()
-        .add::<MarketplacePlugin>();
+        .add::<TenantPlugin>();
     let catalog = builder.build();
     let plugins = catalog.get::<dill::AllOf<dyn Plugin<RuntimeAssembly>>>()?;
     Ok(plugins.into_iter().collect())

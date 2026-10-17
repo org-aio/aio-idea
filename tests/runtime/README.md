@@ -11,7 +11,7 @@ digest = "<打包器输出的 64 位小写摘要>"
 tenants = ["default"]
 ```
 
-`component_bootstrap.py` 使用正式产品二进制、平台生命周期 Wasm 夹具、独立 PostgreSQL 与真实 HTTP。它关闭市场系统服务，使用声明管理能力的整包，覆盖零执行器启动、在线装配后的首次安装、强杀恢复、前端自升级/回滚/停用/卸载、新版单独信任、撤信任后重启仍暂停及原版本恢复、无效信任候选的恢复记录、卸载后更换引导摘要仍不重装、撤去配置保留安装，以及无效批次不会部分安装。它不证明市场/身份系统 UI 已动态交付。需要 Docker 中新建的本机专用库 `component_bootstrap_test`，并撤销 `public` schema 的公共权限：
+`component_bootstrap.py` 使用正式产品二进制、平台生命周期 Wasm 夹具、独立 PostgreSQL 与真实 HTTP。它不安装市场页面，使用声明管理能力的整包，覆盖零执行器启动、在线装配后的首次安装、强杀恢复、前端自升级/回滚/停用/卸载、新版单独信任、撤信任后重启仍暂停及原版本恢复、无效信任候选的恢复记录、卸载后更换引导摘要仍不重装、撤去配置保留安装，以及无效批次不会部分安装。它验证管理契约；市场 UI 的整包验收随独立插件维护。需要 Docker 中新建的本机专用库 `component_bootstrap_test`，并撤销 `public` schema 的公共权限：
 
 ```sh
 export AIO_BOOTSTRAP_TEST_BINARY=/path/to/aio-idea
@@ -53,11 +53,13 @@ python3 tests/runtime/startup_recovery.py
 cargo test --locked --no-default-features --features server host:: -- --include-ignored --test-threads=1
 ```
 
-测试通过真实 HTTP 创建文件，停用四项可选系统服务后验证 API 为 404、旧 Service 引用返回 `PoolClosed`；重新启用创建新实例并保留数据。身份重启会连带重建系统服务，持久化登录会话继续可用；MCP 检查工具目录结果，gRPC 使用正式客户端验证最终协议状态。身份专用测试另外覆盖部分启动失败、失败替换后恢复和资源最终关闭；配置测试覆盖旧字典字段迁移、保留其他停用状态以及候选未启动时不提前确认。测试后停止本次监督器，删除专用数据库和任务临时目录。
+测试通过真实 HTTP 创建文件，停用三项可选系统服务后验证 API 为 404、旧 Service 引用返回 `PoolClosed`；重新启用创建新实例并保留数据。身份重启会连带重建系统服务，持久化登录会话继续可用；MCP 检查工具目录结果，gRPC 使用正式客户端验证最终协议状态。身份专用测试另外覆盖部分启动失败、失败替换后恢复和资源最终关闭；配置测试覆盖旧字典和市场字段迁移、保留其他停用状态以及候选未启动时不提前确认。测试后停止本次监督器，删除专用数据库和任务临时目录。
 
 `src/host/script_service_tests.rs` 在同一产品宿主中发布两种语言的增强，保持 MCP HTTP 客户端与 gRPC 连接，在线移除全部语言及脚本服务。原生设备能力在显式授权后继续执行，增强入口消失，身份与数据库单例保留；分别恢复一种语言后核对版本摘要、激活代数和调用结果。只恢复与活动包不匹配的语言时，增强目录为空、调用被拒绝，原生目录及调用仍可用。测试还覆盖停用语言无法编译候选、语言重启会重建脚本服务、演进控制开关保留以及原生能力撤权。
 
 字典业务与浏览器验收随独立插件维护，见 [整包测试](https://github.com/org-aio/aio-plugin-dictionary/blob/main/tests/README.md)。它使用真实产品、Docker Sidecar 和 PostgreSQL 验证不重编宿主的安装、升级、回滚、停用、重启、实时撤权、数据复制及桌面/手机操作；产品不再保留第二套静态字典测试。
+
+市场页面、账户入口和 CLI 管理同样由独立 v2 Wasm 整包贡献，产品不再编译市场前后端。当前验收入口为 [市场整包测试](https://github.com/org-aio/aio-plugin-marketplace/blob/main/tests/README.md)，使用当前产品 release Web、真实 PostgreSQL、固定摘要首次引导和浏览器；静态页面的历史测试不能作为新版市场验收证据。首次引导与部署信任的配置步骤见 [宿主说明](../../src/host/README.md)。
 
 ## 执行器暂停与进程恢复
 

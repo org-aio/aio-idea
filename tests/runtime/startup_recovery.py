@@ -125,7 +125,7 @@ def command(name, success=True):
 
 good = {"schema_version": 1, "mcp": {"enabled": False}, "evolution": {"enabled": False},
         "files": {"enabled": False},
-        "access_control": {"enabled": False}, "tenants": {"enabled": False}, "marketplace": {"enabled": False}}
+        "access_control": {"enabled": False}, "tenants": {"enabled": False}}
 native_only = dict(good, mcp={"enabled": True}, rhai={"enabled": False}, typescript={"enabled": False})
 
 

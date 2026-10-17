@@ -15,7 +15,6 @@ pub fn client_catalog() -> anyhow::Result<ClientCatalog> {
 
     let mut builder = CatalogBuilder::new();
     aio_plugin_identity_client::register(&mut builder);
-    aio_plugin_marketplace_client::register(&mut builder);
     aio_plugin_rbac_client::register(&mut builder);
     aio_plugin_file_client::register(&mut builder);
     aio_plugin_settings::register(&mut builder);
@@ -63,7 +62,6 @@ mod tests {
             "file-list",
             "profile",
             "settings",
-            "marketplace",
             "tenants",
             "space-files",
             "space-terminal",
@@ -71,6 +69,11 @@ mod tests {
             assert!(page_ids.contains(page_id), "缺少系统页面: {page_id}");
         }
         assert!(!page_ids.contains("home"), "壳不能贡献内置首页");
+        assert!(!page_ids.contains("marketplace"), "市场页面由安装整包贡献");
+        assert!(
+            !account_ids.contains("marketplace"),
+            "市场账户入口由安装整包贡献"
+        );
 
         let users = catalog
             .pages
@@ -126,13 +129,7 @@ mod tests {
             ["infrastructure", "file-management"]
         );
         assert_eq!(files.required_permission, Some("file:manage"));
-        for account_id in [
-            "profile",
-            "settings",
-            "marketplace",
-            "tenant-switcher",
-            "logout",
-        ] {
+        for account_id in ["profile", "settings", "tenant-switcher", "logout"] {
             assert!(
                 account_ids.contains(account_id),
                 "缺少账户入口: {account_id}"

@@ -14,7 +14,7 @@ use az_plugin_host::runtime::server::plugins::{
 use serde::{Deserialize, Serialize};
 
 use crate::plugins::server::{
-    AccessControlPlugin, FilePlugin, IdentityServicePlugin, MarketplacePlugin, TenantPlugin,
+    AccessControlPlugin, FilePlugin, IdentityServicePlugin, TenantPlugin,
 };
 
 #[path = "runtime_bootstrap.rs"]
@@ -71,8 +71,6 @@ struct Composition {
     #[serde(default)]
     tenants: Capability,
     #[serde(default)]
-    marketplace: Capability,
-    #[serde(default)]
     trusted_management_components: Vec<TrustedManagementComponent>,
     #[serde(default)]
     identity: Resource,
@@ -94,7 +92,6 @@ impl Default for Composition {
             files: Capability::default(),
             access_control: Capability::default(),
             tenants: Capability::default(),
-            marketplace: Capability::default(),
             trusted_management_components: Vec::new(),
             identity: Resource::default(),
             database: Resource::default(),
@@ -263,12 +260,6 @@ fn select_plugins(
         AccessControlPlugin,
     );
     select(&mut plugins, &previous.tenants, &next.tenants, TenantPlugin);
-    select(
-        &mut plugins,
-        &previous.marketplace,
-        &next.marketplace,
-        MarketplacePlugin,
-    );
     // 信任与首次引导分开持久化，移除摘要会重建组件环境并暂停该版本的高权限能力。
     if previous.trusted_management_components != next.trusted_management_components {
         if next.trusted_management_components.is_empty() {
@@ -328,11 +319,14 @@ fn parse(bytes: &[u8]) -> Result<Composition> {
     Ok(selected)
 }
 
-// 只迁移持久化数据；新部署输入仍拒绝已退出原生组合的字典开关。
+// 只迁移持久化数据；新部署输入拒绝已退出原生组合的系统整包开关。
 fn migrate_saved(bytes: &[u8]) -> Result<Composition> {
     let mut value: serde_json::Value = serde_json::from_slice(bytes)?;
-    if let Some(retired) = value.as_object_mut().and_then(|v| v.remove("dictionary")) {
-        let _: Capability = serde_json::from_value(retired).context("旧字典开关格式无效")?;
+    for name in ["dictionary", "marketplace"] {
+        if let Some(retired) = value.as_object_mut().and_then(|v| v.remove(name)) {
+            let _: Capability = serde_json::from_value(retired)
+                .with_context(|| format!("旧系统插件开关格式无效: {name}"))?;
+        }
     }
     parse(&serde_json::to_vec(&value)?)
 }
