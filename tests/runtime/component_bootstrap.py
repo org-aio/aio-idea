@@ -1,4 +1,4 @@
-"""正式产品、真实 Wasm 与独立 PostgreSQL 验证无管理界面的首次整包引导。"""
+"""正式产品、真实 Wasm 与独立 PostgreSQL 验证管理整包引导、信任撤销及恢复。"""
 
 import gzip
 import json
@@ -116,24 +116,29 @@ def stop():
     host = None
 
 
-def configure(enabled):
+def configure(enabled, trusted=()):
     composition = {"schema_version": 1, "wasm": {"enabled": enabled},
         **{key: {"enabled": False} for key in ["sidecar", "rhai", "typescript", "evolution",
-                                               "files", "access_control", "tenants", "marketplace"]}}
+                                               "files", "access_control", "tenants", "marketplace"]},
+        "trusted_management_components": [{"git": git, "digest": bundle[1]} for bundle in trusted]}
     pending = source.with_suffix(".pending")
     pending.write_text(json.dumps(composition), encoding="utf-8")
     pending.replace(source)
     if host is not None:
-        until(lambda: json.loads(record.read_text(encoding="utf-8"))["confirmed"]["value"]["wasm"]["enabled"] == enabled)
+        def applied():
+            value = json.loads(record.read_text(encoding="utf-8"))["confirmed"]["value"]
+            return value["wasm"]["enabled"] == enabled and value["trusted_management_components"] == composition["trusted_management_components"]
+        until(applied)
 
 
-def package(version, repository=git):
+def package(version, repository=git, management=False):
     candidate = root / ("wasm-" + version)
     (candidate / "web").mkdir(parents=True)
     (candidate / "web/index.html").write_text("<!doctype html><title>Fixture</title>", encoding="utf-8")
     shutil.copy2(str(wasm), str(candidate / "plugin.wasm"))
+    permissions = "required_permissions=['plugin:manage']\n[plugin.capabilities]\nmanagement=true\n" if management else ""
     (candidate / "aio-plugin.toml").write_text(
-        "schema_version=2\n[plugin]\npermissions=['fixture.view']\n[plugin.marketplace]\n"
+        "schema_version=2\n[plugin]\npermissions=['fixture.view']\n" + permissions + "[plugin.marketplace]\n"
         "title='Component bootstrap'\nsummary='First install fixture'\nlicense='MIT'\n"
         "[plugin.runtime]\nartifact='plugin.wasm'\nhost_version='>=2026.10.16'\n"
         "[plugin.frontend]\npath='web'\n", encoding="utf-8")
@@ -160,21 +165,33 @@ def invoke(source_id):
     assert result["status"] == 200 and bytes(result["body"]) == b"42", result
 
 
+def manage(source_id, path, value=None):
+    token = success("/api/runtime/frontend/mount", {"page_id": "component:%s:fixture" % source_id})["token"]
+    result = success("/api/runtime/components/%s/manage" % token, {
+        "method": "GET" if value is None else "POST", "path": path,
+        "body": [] if value is None else list(json.dumps(value).encode()),
+        "headers": [{"name": "content-type", "value": "application/json"}],
+    })
+    assert 200 <= result["status"] < 300, result
+    return token
+
+
 try:
     assert sql("SELECT count(*) FROM pg_tables WHERE schemaname='public'") == "0", "必须使用新的独立测试库"
-    first = package("1.0.0")
-    second = package("2.0.0")
+    first = package("1.0.0", management=True)
+    second = package("2.0.0", management=True)
     config.write_text("plugins=[]\n" + declaration(first), encoding="utf-8")
-    configure(False)
+    configure(False, [first])
     launch()
     assert sql("SELECT count(*) FROM component_initializations") == "0"
     assert sql("SELECT count(*) FROM component_sources") == "0"
     status, headers, _ = request("/api/auth/login", {"account": env["AIO_BOOTSTRAP_ACCOUNT"], "password": env["AIO_BOOTSTRAP_PASSWORD"]})
     assert status == 200
     cookie = headers["Set-Cookie"].split(";")[0]
-    configure(True)
+    configure(True, [first])
     source_id = sql("SELECT id FROM component_sources WHERE git='%s'" % git)
     invoke(source_id)
+    manage(source_id, "/api/runtime/catalog")
     installed = installation()
     assert json.loads(installed)["digest"] == first[1]
     # 首次安装后强杀真实宿主，下一进程不得重复激活或改变代数。
@@ -185,9 +202,12 @@ try:
     assert installation() == installed
     invoke(source_id)
 
+    assert request("/api/runtime/components/publish", raw=second[0].read_bytes())[0] >= 400
+    configure(True, [first, second])
     success("/api/runtime/components/publish", raw=second[0].read_bytes())
-    success("/api/runtime/plugins/install", {"git": git, "rev": second[1]})
-    success("/api/runtime/plugins/%s/rollback" % source_id, {})
+    old_token = manage(source_id, "/api/runtime/plugins/install", {"git": git, "rev": second[1]})
+    assert request("/api/runtime/components/%s/manage" % old_token, {"method": "GET", "path": "/api/runtime/catalog"})[0] >= 400
+    manage(source_id, "/api/runtime/plugins/%s/rollback" % source_id, {})
     rolled_back = installation()
     assert json.loads(rolled_back)["excluded_digest"] == second[1]
     stop()
@@ -196,13 +216,43 @@ try:
     assert sql("SELECT digest FROM component_publications WHERE source_id='%s'" % source_id) == second[1]
     invoke(source_id)
 
-    success("/api/runtime/plugins/%s/disable" % source_id, {})
+    # 撤去部署信任后首次引导不能重新授权；重启仍暂停，恢复信任不改变租户选择。
+    old_token = manage(source_id, "/api/runtime/catalog")
+    configure(True)
+    assert installation() == rolled_back
+    assert request("/api/runtime/components/%s/manage" % old_token, {"method": "GET", "path": "/api/runtime/catalog"})[0] >= 400
+    assert request("/api/runtime/frontend/mount", {"page_id": "component:%s:fixture" % source_id})[0] >= 400
+    stop()
+    launch()
+    assert installation() == rolled_back
+    assert request("/api/runtime/frontend/mount", {"page_id": "component:%s:fixture" % source_id})[0] >= 400
+    configure(True, [first, second])
+    assert installation() == rolled_back
+    invoke(source_id)
+    manage(source_id, "/api/runtime/catalog")
+
+    # 无效信任候选不得替换已确认组合，下一进程从最后成功的声明恢复。
+    rejected = json.loads(source.read_text(encoding="utf-8"))
+    rejected["trusted_management_components"][0]["digest"] = "latest"
+    pending = source.with_suffix(".pending")
+    pending.write_text(json.dumps(rejected), encoding="utf-8")
+    pending.replace(source)
+    until(lambda: (json.loads(record.read_text(encoding="utf-8"))["attempt"] or {}).get("rejected", False))
+    assert installation() == rolled_back
+    manage(source_id, "/api/runtime/catalog")
+    stop()
+    launch()
+    manage(source_id, "/api/runtime/catalog")
+    configure(True, [first, second])
+
+    manage(source_id, "/api/runtime/plugins/%s/disable" % source_id, {})
     disabled = installation()
     stop()
     launch()
     assert installation() == disabled and not json.loads(disabled)["enabled"]
     assert request("/api/runtime/frontend/mount", {"page_id": "component:%s:fixture" % source_id})[0] >= 400
-    success("/api/runtime/plugins/%s/uninstall" % source_id, {})
+    success("/api/runtime/plugins/%s/enable" % source_id, {})
+    manage(source_id, "/api/runtime/plugins/%s/uninstall" % source_id, {})
     stop()
     config.write_text("plugins=[]\n" + declaration(second), encoding="utf-8")
     launch()
@@ -229,7 +279,7 @@ try:
     config.write_text("plugins=[]\n", encoding="utf-8")
     launch()
     invoke(source_id)
-    print("component bootstrap passed: first install, deferred executor, crash recovery, rollback, disable, uninstall, batch validation; logs=" + str(root), flush=True)
+    print("component bootstrap passed: first install, deferred executor, crash recovery, version trust, live revocation, recovery journal, self-upgrade, rollback, disable, uninstall, batch validation; logs=" + str(root), flush=True)
 finally:
     stop()
     log.close()

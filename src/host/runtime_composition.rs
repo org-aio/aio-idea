@@ -6,9 +6,10 @@ use anyhow::{Context, Result, ensure};
 use az_plugin_core::{DynPlugin, Plugin};
 use az_plugin_host::recovery::{ConfigurationJournal, configuration_digest, read_configuration};
 use az_plugin_host::runtime::server::plugins::{
-    DatabasePlugin, EnhancementServicePlugin, EnhancementsPlugin, EvolutionPlugin, GrpcPlugin,
-    McpPlugin, ProcessPlugin, RhaiPlugin, RuntimeAssembly, RuntimeHost, ScriptRuntimePlugin,
-    SidecarPlugin, TypeScriptPlugin, WasmComponentPlugin, WasmPlugin,
+    ComponentManagementPlugin, DatabasePlugin, EnhancementServicePlugin, EnhancementsPlugin,
+    EvolutionPlugin, GrpcPlugin, McpPlugin, ProcessPlugin, RhaiPlugin, RuntimeAssembly,
+    RuntimeHost, ScriptRuntimePlugin, SidecarPlugin, TrustedManagementComponent, TypeScriptPlugin,
+    WasmComponentPlugin, WasmPlugin,
 };
 use serde::{Deserialize, Serialize};
 
@@ -72,6 +73,8 @@ struct Composition {
     #[serde(default)]
     marketplace: Capability,
     #[serde(default)]
+    trusted_management_components: Vec<TrustedManagementComponent>,
+    #[serde(default)]
     identity: Resource,
     #[serde(default)]
     database: Resource,
@@ -92,6 +95,7 @@ impl Default for Composition {
             access_control: Capability::default(),
             tenants: Capability::default(),
             marketplace: Capability::default(),
+            trusted_management_components: Vec::new(),
             identity: Resource::default(),
             database: Resource::default(),
         }
@@ -265,6 +269,19 @@ fn select_plugins(
         &next.marketplace,
         MarketplacePlugin,
     );
+    // 信任与首次引导分开持久化，移除摘要会重建组件环境并暂停该版本的高权限能力。
+    if previous.trusted_management_components != next.trusted_management_components {
+        if next.trusted_management_components.is_empty() {
+            plugins.retain(|entry| {
+                entry.as_ref().type_id() != TypeId::of::<ComponentManagementPlugin>()
+            });
+        } else {
+            replace(
+                &mut plugins,
+                ComponentManagementPlugin(next.trusted_management_components.clone()),
+            );
+        }
+    }
     if previous.identity != next.identity {
         replace(&mut plugins, IdentityServicePlugin);
     }

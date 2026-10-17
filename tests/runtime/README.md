@@ -11,7 +11,7 @@ digest = "<打包器输出的 64 位小写摘要>"
 tenants = ["default"]
 ```
 
-`component_bootstrap.py` 使用正式产品二进制、平台生命周期 Wasm 夹具、独立 PostgreSQL 与真实 HTTP。它关闭市场系统服务，覆盖零执行器启动、在线装配后的首次安装、强杀恢复、升级回滚、停用、卸载后更换引导摘要仍不重装、撤去配置保留安装，以及无效批次不会部分安装。它不证明市场/身份系统 UI 已动态交付，也不绕过高权限整包准入。需要 Docker 中新建的本机专用库 `component_bootstrap_test`，并撤销 `public` schema 的公共权限：
+`component_bootstrap.py` 使用正式产品二进制、平台生命周期 Wasm 夹具、独立 PostgreSQL 与真实 HTTP。它关闭市场系统服务，使用声明管理能力的整包，覆盖零执行器启动、在线装配后的首次安装、强杀恢复、前端自升级/回滚/停用/卸载、新版单独信任、撤信任后重启仍暂停及原版本恢复、无效信任候选的恢复记录、卸载后更换引导摘要仍不重装、撤去配置保留安装，以及无效批次不会部分安装。它不证明市场/身份系统 UI 已动态交付。需要 Docker 中新建的本机专用库 `component_bootstrap_test`，并撤销 `public` schema 的公共权限：
 
 ```sh
 export AIO_BOOTSTRAP_TEST_BINARY=/path/to/aio-idea
@@ -23,6 +23,12 @@ python3 tests/runtime/component_bootstrap.py
 ```
 
 夹具来自平台 `lib/plugin/runtime/tests/fixture`，以 `wasm32-wasip2` 编译；打包器为 `az-plugin-bundle` 的 `package` 示例。脚本只终止自己创建的宿主，结果输出日志目录。测试完成后删除任务数据库/容器及临时目录。更完整的首次安装和部分失败语义见 [整包首次引导](https://github.com/org-aio/aio-platform/blob/main/docs/plugin/component-bootstrap.md)。
+
+## 管理整包信任
+
+`AIO_RUNTIME_COMPOSITION` JSON 可声明 `trusted_management_components`，每项包含完整 HTTPS `git` 和打包器输出的规范 `digest`，默认空。新版本须单独加入，撤销会暂停相关安装并保留版本、代数和回滚选择。该声明和首次引导分开：信任可以在线更新并经组合恢复记录持久化，引导不会覆盖后续撤权。管理包同时声明 `required_permissions=['plugin:manage']` 和 `capabilities.management=true`；身份提供包仍拒绝。前端通过 `aioPlugin.manage` 使用公共契约，详情见 [系统整包管理](https://github.com/org-aio/aio-platform/blob/main/docs/plugin/component-management.md)。
+
+2026-10-17 在 Linux 隔离环境完成上述管理整包进程测试，产品消费平台 `67b40b5`。真实 Wasm、HTTP 和 PostgreSQL 共同验证自管理、信任撤销跨重启保留，以及无效信任候选回退到最后成功组合；全过程使用同一个宿主二进制。市场 UI 仍静态装配，生产服务未据此更新。
 
 ## 持久启动组合
 
