@@ -10,7 +10,7 @@ package_path = "."
 
 [[plugins]]
 git = "https://github.com/org-aio/aio-plugin-device.git"
-revision = "cb2138f8142088e0c4f1298a29eb8ac39c236519"
+revision = "78de1ace66edfb5b632a39a5f888b020a0a157f3"
 directory = "aio-plugin-device-3fc9fd72"
 
 [plugins.client]
