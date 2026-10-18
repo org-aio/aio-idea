@@ -121,6 +121,108 @@ impl IdentityProvider for ProductIdentity {
             permissions,
         }))
     }
+    /// 列出该用户加入的租户，并标记会话当前所在租户。
+    async fn list_tenants(
+        &self,
+        session: &SessionContext,
+    ) -> Result<Vec<az_plugin_host::identity::TenantView>> {
+        let rows = sqlx::query_as::<_, (String, String)>(
+            "SELECT tenants.id, tenants.label FROM tenant_memberships memberships JOIN tenants ON tenants.id = memberships.tenant_id WHERE memberships.user_id = $1 ORDER BY tenants.label",
+        )
+        .bind(&session.user_id)
+        .fetch_all(&self.pool)
+        .await?;
+        Ok(rows
+            .into_iter()
+            .map(|(id, label)| az_plugin_host::identity::TenantView {
+                current: id == session.tenant_id,
+                id,
+                label,
+            })
+            .collect())
+    }
+
+    /// 创建租户：新租户里只放调用者，并授予它管理员角色与基础权限。
+    async fn create_tenant(
+        &self,
+        session: &SessionContext,
+        label: &str,
+    ) -> Result<az_plugin_host::identity::TenantView> {
+        let label = label.trim();
+        anyhow::ensure!(
+            !label.is_empty() && label.chars().count() <= 80,
+            "租户名称需要 1 到 80 个字符"
+        );
+        let mut transaction = self.pool.begin().await?;
+        // 租户 ID 由数据库生成，避免为宿主进程新增 UUID 依赖，也避免多进程竞争。
+        let tenant_id: String = sqlx::query_scalar(
+            "INSERT INTO tenants (id, label) VALUES (gen_random_uuid()::text, $1) RETURNING id",
+        )
+        .bind(label)
+        .fetch_one(&mut *transaction)
+        .await?;
+        sqlx::query(
+            "INSERT INTO tenant_memberships (tenant_id, user_id, display_name) VALUES ($1, $2, $3)",
+        )
+        .bind(&tenant_id)
+        .bind(&session.user_id)
+        .bind(&session.display_name)
+        .execute(&mut *transaction)
+        .await?;
+        sqlx::query("INSERT INTO tenant_member_roles (tenant_id, user_id, role_id) VALUES ($1, $2, 'tenant-admin')")
+            .bind(&tenant_id)
+            .bind(&session.user_id)
+            .execute(&mut *transaction)
+            .await?;
+        // 新租户的最小可用权限集合保持与既有产品语义一致。
+        for permission in [
+            "plugin:manage",
+            "tenant:manage",
+            "rbac:manage",
+            "dictionary:manage",
+            "file:manage",
+        ] {
+            sqlx::query("INSERT INTO role_permissions (tenant_id, role_id, permission) VALUES ($1, 'tenant-admin', $2)")
+                .bind(&tenant_id)
+                .bind(permission)
+                .execute(&mut *transaction)
+                .await?;
+        }
+        sqlx::query("INSERT INTO role_permissions (tenant_id, role_id, permission) VALUES ($1, 'member', 'workspace:view')")
+            .bind(&tenant_id)
+            .execute(&mut *transaction)
+            .await?;
+        transaction.commit().await?;
+        Ok(az_plugin_host::identity::TenantView {
+            id: tenant_id,
+            label: label.to_owned(),
+            current: false,
+        })
+    }
+
+    /// 只允许重命名会话当前所在租户，避免越权改动其他租户。
+    async fn rename_current_tenant(
+        &self,
+        session: &SessionContext,
+        label: &str,
+    ) -> Result<az_plugin_host::identity::TenantView> {
+        let label = label.trim();
+        anyhow::ensure!(
+            !label.is_empty() && label.chars().count() <= 80,
+            "租户名称需要 1 到 80 个字符"
+        );
+        let updated = sqlx::query("UPDATE tenants SET label = $2 WHERE id = $1")
+            .bind(&session.tenant_id)
+            .bind(label)
+            .execute(&self.pool)
+            .await?;
+        anyhow::ensure!(updated.rows_affected() == 1, "租户不存在");
+        Ok(az_plugin_host::identity::TenantView {
+            id: session.tenant_id.clone(),
+            label: label.to_owned(),
+            current: true,
+        })
+    }
 }
 
 #[async_trait::async_trait]
