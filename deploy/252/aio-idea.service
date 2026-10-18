@@ -24,7 +24,12 @@ Environment=AIO_PLUGIN_SUPERVISOR_SOCKET=/run/aio-plugin-supervisor/supervisor.s
 Environment=AIO_SESSION_SECURE=1
 Environment=AIO_PASSWORD_MIN_LENGTH=8
 Environment=AIO_PLUGIN_PUBLISH_ACCOUNTS=zjarlin
-ExecStart=/opt/aio-idea/current/aio-idea
+Environment=AIO_LAUNCHER_ROOT=/opt/aio-idea
+Environment=AIO_LAUNCHER_BINARY=aio-idea
+Environment=AIO_LAUNCHER_HEALTH_URL=http://127.0.0.1:3080/health
+Environment=AIO_LAUNCHER_RESTART=systemctl restart aio-idea.service
+# 固定启动器位于 current 之外的稳定路径，切换发布不会替换正在运行的信任根。
+ExecStart=/opt/aio-idea/launcher/aio-launcher boot
 TimeoutStartSec=300
 Restart=on-failure
 RestartSec=2

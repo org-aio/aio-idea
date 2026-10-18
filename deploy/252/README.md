@@ -30,6 +30,36 @@ curl --fail https://aio.addzero.site/health
 
 每个发布目录必须同时包含服务端二进制、`web/` 和 `aio.toml`。进程插件由 root 监督器在无外网的独立容器中运行，主壳只通过 Unix socket 调用监督器，不加入 Docker 用户组。Wasm Component 在宿主重启时按租户恢复，首次启动窗口配置为 300 秒以容纳跨语言 Component 冷启动。文件能力以独立 Sidecar 整包交付，元数据使用插件 PostgreSQL schema，内容通过运行时对象存储持久化。旧 `/opt/aio-idea/file-storage` 和旧表必须先备份、迁移并核对，迁移步骤见 [文件整包说明](https://github.com/org-aio/aio-plugin-file/blob/main/tests/README.md)。旧启动组合中的 `files` 字段须在停服期间使用 `aio-idea runtime migrate` 退役；新宿主不读取 `AIO_FILE_STORAGE_DIR`，不会自动复制旧数据或延续站点根图床链接。`credentials.json` 和只包含数据库连接、初始管理员密码的 `/opt/aio-idea/runtime.env` 是服务器私密文件，不进入 Git。首次启动必须设置 `AIO_BOOTSTRAP_PASSWORD`。发布凭据只能由 `AIO_PLUGIN_PUBLISH_ACCOUNTS` 明确列出的平台账号创建或撤销；普通租户管理员仍可安装和管理租户插件，但不能认领全局 Git 发布来源。
 
+## 宿主自更新
+
+宿主的自我演进由固定启动器 `aio-launcher` 完成。它是信任根，安装在
+`/opt/aio-idea/launcher/aio-launcher`，不随发布目录切换，只依赖文件系统、systemd
+重启与 HTTP 健康入口。
+
+```text
+/opt/aio-idea/launcher/aio-launcher   固定启动器副本
+/opt/aio-idea/releases/<40 位 SHA>/   不可变发布物（含 release-manifest.json）
+/opt/aio-idea/current                 指向当前发布的原子符号链接
+/opt/aio-idea/switch.json             切换事务记录
+```
+
+`aio-idea.service` 的 `ExecStart` 指向启动器 `boot`：它先确认当前发布清单摘要，
+再 `exec` 成宿主，因此 PID、stdout 与 systemd 生命周期都不中断。发布脚本调用
+`activate`：校验候选与摘要、原子切换 `current`、重启服务、等待健康，失败则自动
+回滚到上一发布并在 `switch.json` 记录原因。部署侧还可用 `repair` 显式回滚未确认
+的切换。`activate` 拒绝在承载服务内部运行，避免自杀式重启；事务用持有者 PID
+与进程起始时间区分在途与崩溃，`boot` 只在持有者消失并超过宽限期后接管回滚。
+
+发布物由 `deploy/release-manifest.cjs` 生成清单，列出宿主二进制、`web/index.html`
+与 `aio.toml` 的 SHA-256。任何缺失或摘要不符都会阻止发布，不会留下半完成的
+`current`。启动器不处理业务数据迁移，那些仍由 v2 整包与 `runtime migrate` 负责。
+
+**首次升级**：旧版 `aio-idea.service` 直接 `ExecStart=/opt/aio-idea/current/aio-idea`，
+旧发布目录没有 `release-manifest.json`。发布脚本先用 `aio-launcher adopt` 为当前发布
+补写清单，再安装启动器与单元文件、执行 `activate`。这样回滚目标与被启动的发布都
+走同一套严格校验，不存在“缺清单也放行”的弱化路径；迁移失败时脚本仍保留原有
+systemd 备份与 `restore_previous` 人工回退。
+
 ## 原生 v2 Process
 
 2026-09-16 已接通 Git 推送后的 v2 自动构建、发布与既有租户升级，当前智能体版本和验证结果见[自动交付验收](native-delivery-acceptance.md)。

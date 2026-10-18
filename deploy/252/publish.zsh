@@ -58,6 +58,8 @@ print "检查 Web 客户端"
 cargo check --no-default-features --features web
 print "构建 glibc 2.17 服务端"
 cargo zigbuild --release --target "$target" --no-default-features --features server
+print "构建固定启动器"
+cargo zigbuild --release --target "$target" --no-default-features --features server --bin aio-launcher
 print "构建 Web 资产"
 cargo clean -p az-ui-components --profile wasm-release --target wasm32-unknown-unknown --config 'profile.wasm-release.inherits="release"'
 rm -rf "$CARGO_TARGET_DIR/dx/aio-idea/release/web/public"
@@ -68,11 +70,15 @@ node deploy/prepare-web.cjs "$CARGO_TARGET_DIR/dx/aio-idea/release/web/public"
 readonly release="$artifact/release"
 mkdir -p "$release"
 cp "$CARGO_TARGET_DIR/$target_directory/release/aio-idea" "$release/aio-idea"
+cp "$CARGO_TARGET_DIR/$target_directory/release/aio-launcher" "$release/aio-launcher"
 cp -R "$CARGO_TARGET_DIR/dx/aio-idea/release/web/public" "$release/web"
 cp aio.toml "$release/aio.toml"
 mkdir -p "$release/systemd"
 cp deploy/aio-plugin-supervisor.service "$release/systemd/aio-plugin-supervisor.service"
 cp deploy/252/aio-idea.service "$release/systemd/aio-idea.service"
+
+# 发布清单：启动器在切换与启动前逐项复核这些摘要。
+node deploy/release-manifest.cjs "$release" "$revision"
 
 readonly incoming="$deploy_root/releases/.incoming-$revision"
 readonly remote_release="$deploy_root/releases/$revision"
@@ -206,19 +212,56 @@ activate_candidate() {
         && install -m 0644 \"\$remote_release/systemd/aio-idea.service\" /etc/systemd/system/aio-idea.service \\
         && systemctl daemon-reload \\
         && systemctl enable aio-plugin-supervisor.service aio-idea.service \\
-        && ln -s \"\$remote_release\" \"\$deploy_root/.next\" \\
-        && mv -Tf \"\$deploy_root/.next\" \"\$deploy_root/current\" \\
         && systemctl restart aio-plugin-supervisor.service \\
-        && systemctl restart aio-idea.service \\
-        && wait_for_release_health "\$remote_release/aio-idea" http://127.0.0.1:3080/health 300 \\
-        && wait_for_health https://aio.addzero.site/health 60
+        && wait_for_health http://127.0.0.1:3080/health 300
 }
 
-if activate_candidate; then
-    rm -rf \"\$backup\"
-    printf '已激活 %s\\n' '$revision'
+# 启动器是信任根：安装在 current 之外的稳定路径，切换发布不会替换正在运行的副本。
+install_launcher() {
+    install -d -o root -g aio-shell -m 0750 \"\$deploy_root/launcher\" \\
+        && install -m 0750 -o root -g aio-shell \"\$remote_release/aio-launcher\" \"\$deploy_root/launcher/aio-launcher\"
+}
+
+# 为协议迁移前的既有发布补写清单；仅在目标缺少 release-manifest.json 时执行。
+adopt_release() {
+    target="$1"
+    [ -n "$target" ] || return 0
+    [ -f "$target/release-manifest.json" ] && return 0
+    revision_name=\$(basename "\$target")
+    AIO_LAUNCHER_ROOT=\"\$deploy_root\" \
+    AIO_LAUNCHER_BINARY=aio-idea \
+    AIO_LAUNCHER_HEALTH_URL=http://127.0.0.1:3080/health \
+    AIO_LAUNCHER_RESTART=\"systemctl restart aio-idea.service\" \
+    \"\$deploy_root/launcher/aio-launcher\" adopt "\$revision_name"
+}
+
+# 由启动器完成切换：校验候选摘要、原子切换、重启服务并等待健康，失败自行回滚。
+activate_with_launcher() {
+    AIO_LAUNCHER_ROOT=\"\$deploy_root\" \\
+    AIO_LAUNCHER_BINARY=aio-idea \\
+    AIO_LAUNCHER_HEALTH_URL=http://127.0.0.1:3080/health \\
+    AIO_LAUNCHER_HEALTH_SECONDS=300 \\
+    AIO_LAUNCHER_RESTART=\"systemctl restart aio-idea.service\" \\
+    \"\$deploy_root/launcher/aio-launcher\" activate '$revision'
+}
+
+# 部署侧显式兜底：把未确认的切换回滚到上一发布。
+repair_with_launcher() {
+    AIO_LAUNCHER_ROOT=\"\$deploy_root\" \\
+    AIO_LAUNCHER_BINARY=aio-idea \\
+    AIO_LAUNCHER_HEALTH_URL=http://127.0.0.1:3080/health \\
+    AIO_LAUNCHER_RESTART=\"systemctl restart aio-idea.service\" \\
+    \"\$deploy_root/launcher/aio-launcher\" repair || true
+}
+
+if install_launcher && adopt_release "\$previous" && activate_candidate && activate_with_launcher; then
+    wait_for_release_health \"\$remote_release/aio-idea\" http://127.0.0.1:3080/health 300 \\
+        && wait_for_health https://aio.addzero.site/health 60 \\
+        && rm -rf \"\$backup\" \\
+        && printf '已激活 %s\n' '$revision'
 else
+    repair_with_launcher
     restore_previous
-    printf '发布失败，已恢复 %s\\n' \"\$previous\" >&2
+    printf '发布失败，已恢复 %s\n' \"\$previous\" >&2
     exit 1
 fi"
