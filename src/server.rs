@@ -8,7 +8,6 @@ use crate::plugins;
 use anyhow::{Context as _, Result};
 use az_plugin_host::runtime;
 
-#[cfg(test)]
 pub(crate) mod application;
 #[cfg(test)]
 mod runtime_tests;
