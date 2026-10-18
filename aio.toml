@@ -9,3 +9,19 @@ rev = "8be1263cd6a5e366fbe8ff2bf5a1f95580ccaa0a"
 [[plugins]]
 git = "https://github.com/org-aio/aio-plugin-device.git"
 rev = "491be971196cc10364a057ada5b57a30e5a60044"
+
+# 252 生产首次引导：整包存放在发布目录之外，避免切换发布时被替换。
+[[bootstrap_components]]
+path = "/opt/aio-idea/bundles/marketplace.aio-plugin"
+digest = "5a184127206739e06bbdd80510fea3d664260aa3e35607975afe054650e777cd"
+tenants = ["default"]
+
+[[bootstrap_components]]
+path = "/opt/aio-idea/bundles/rbac.aio-plugin"
+digest = "edd19e5ad314f37f7ef4fbe9bc9c0a328f640e88f08bba08b0aebdae210bd0b6"
+tenants = ["default"]
+
+[[bootstrap_components]]
+path = "/opt/aio-idea/bundles/tenant.aio-plugin"
+digest = "f38dad6baac36b9fa8623d6aebdedcea5459d525ac6935dd4d5e9726301dd414"
+tenants = ["default"]
