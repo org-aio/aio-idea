@@ -51,6 +51,76 @@ impl IdentityProvider for ProductIdentity {
                 permissions: session.permissions,
             }))
     }
+
+    /// 在指定租户下创建账号；身份插件负责账号唯一性与密码策略。
+    async fn create_user(
+        &self,
+        tenant: &str,
+        account: &str,
+        display_name: &str,
+        password: &str,
+    ) -> Result<String> {
+        self.identity
+            .create_user(tenant, account, display_name, password)
+            .await
+    }
+
+    /// 重置账号密码；目标归属由宿主身份通道在调用前复核。
+    async fn reset_password(&self, user_id: &str, new_password: &str) -> Result<()> {
+        self.identity.reset_password(user_id, new_password).await
+    }
+
+    /// 切换会话租户后重新读取会话，返回调用方需要的新上下文。
+    async fn switch_tenant(
+        &self,
+        session: &SessionContext,
+        tenant_id: &str,
+    ) -> Result<Option<SessionContext>> {
+        let switched = self
+            .identity
+            .switch_tenant(
+                &aio_plugin_identity_server::SessionContext {
+                    session_id: session.session_id.clone(),
+                    user_id: session.user_id.clone(),
+                    account: session.account.clone(),
+                    display_name: session.display_name.clone(),
+                    tenant_id: session.tenant_id.clone(),
+                    tenant_label: session.tenant_label.clone(),
+                    permissions: session.permissions.clone(),
+                },
+                tenant_id,
+            )
+            .await?;
+        if !switched {
+            return Ok(None);
+        }
+        // 会话表已更新，按主键重读以拿到新租户标签与权限，避免沿用旧快照。
+        let row = sqlx::query_as::<_, (String, String, String, String, String, String)>(
+            "SELECT s.id, s.user_id, u.account, u.display_name, t.id, t.label FROM auth_sessions s JOIN identity_users u ON u.id = s.user_id JOIN tenants t ON t.id = s.tenant_id WHERE s.id = $1 AND s.expires_at > now()",
+        )
+        .bind(&session.session_id)
+        .fetch_optional(&self.pool)
+        .await?;
+        let Some((session_id, user_id, account, display_name, tenant, tenant_label)) = row else {
+            return Ok(None);
+        };
+        let permissions = sqlx::query_scalar::<_, String>(
+            "SELECT DISTINCT permission FROM role_permissions WHERE tenant_id = $1 AND role_id IN (SELECT role_id FROM tenant_member_roles WHERE tenant_id = $1 AND user_id = $2) ORDER BY permission",
+        )
+        .bind(&tenant)
+        .bind(&user_id)
+        .fetch_all(&self.pool)
+        .await?;
+        Ok(Some(SessionContext {
+            session_id,
+            user_id,
+            account,
+            display_name,
+            tenant_id: tenant,
+            tenant_label,
+            permissions,
+        }))
+    }
 }
 
 #[async_trait::async_trait]
