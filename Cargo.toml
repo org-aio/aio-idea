@@ -15,9 +15,9 @@ path = "src/bin/aio-launcher.rs"
 required-features = ["server"]
 
 [dependencies]
-az-plugin-core = { git = "https://github.com/org-aio/aio-platform.git", rev = "d494f470069c45ecfab00625745214889028c038", default-features = false, optional = true }
-az-plugin-launcher = { package = "az-plugin-launcher", git = "https://github.com/org-aio/aio-platform.git", rev = "d494f470069c45ecfab00625745214889028c038", optional = true }
-az-plugin-host = { git = "https://github.com/org-aio/aio-platform.git", rev = "d494f470069c45ecfab00625745214889028c038", default-features = false }
+az-plugin-core = { git = "https://github.com/org-aio/aio-platform.git", rev = "1364f3cf137613406b7a5e14e2fbb38b00172faf", default-features = false, optional = true }
+az-plugin-launcher = { package = "az-plugin-launcher", git = "https://github.com/org-aio/aio-platform.git", rev = "1364f3cf137613406b7a5e14e2fbb38b00172faf", optional = true }
+az-plugin-host = { git = "https://github.com/org-aio/aio-platform.git", rev = "1364f3cf137613406b7a5e14e2fbb38b00172faf", default-features = false }
 anyhow = "1.0.99"
 async-trait = { version = "0.1", optional = true }
 axum = { version = "0.8.6", optional = true }
@@ -36,29 +36,29 @@ aio_plugin_account = { package = "aio-plugin-account", git = "https://github.com
 aio_plugin_settings = { package = "aio-plugin-settings", git = "https://github.com/zjarlin/aio-plugin-settings.git", rev = "3aeb5f7c62a979a0843a8ab7c9c255ec4246c695", optional = true }
 aio_plugin_identity_client = { package = "aio-plugin-identity-client", git = "https://github.com/zjarlin/aio-plugin-identity.git", rev = "a74d2e0531a6f3a907f6e5a4f1fa61c5cbc44f62", optional = true }
 aio_plugin_identity_server = { package = "aio-plugin-identity-server", git = "https://github.com/zjarlin/aio-plugin-identity.git", rev = "9b585cb6a6f74b5fef006189ba23d8d71854d45b", optional = true }
-aio_plugin_rbac_client = { package = "aio-plugin-rbac-client", git = "https://github.com/zjarlin/aio-plugin-rbac.git", rev = "0966f9235cf10cbb7fecf645f5b071dfa607900b", optional = true }
-aio_plugin_rbac_server = { package = "aio-plugin-rbac-server", git = "https://github.com/zjarlin/aio-plugin-rbac.git", rev = "17689dd975f200eea33560e9b18924b487982d25", optional = true }
+aio_plugin_rbac_model = { package = "aio-plugin-rbac-model", git = "https://github.com/zjarlin/aio-plugin-rbac.git", rev = "3929222d2ffdf1cf970887064c31b74de06600af", optional = true }
+aio_plugin_rbac_server = { package = "aio-plugin-rbac-server", git = "https://github.com/zjarlin/aio-plugin-rbac.git", rev = "3929222d2ffdf1cf970887064c31b74de06600af", optional = true }
 aio_plugin_platform_links = { package = "aio-plugin-platform-links", git = "https://github.com/org-aio/aio-plugin-platform-links.git", rev = "8be1263cd6a5e366fbe8ff2bf5a1f95580ccaa0a", optional = true }
-aio_plugin_device_client = { package = "aio-plugin-device-client", git = "https://github.com/org-aio/aio-plugin-device.git", rev = "bee9e2ea26c564af441863de5c5cca9e2891aebc", optional = true }
+aio_plugin_device_client = { package = "aio-plugin-device-client", git = "https://github.com/org-aio/aio-plugin-device.git", rev = "2e8539fb8ce630bc88e04e4bab6d3ea4534cfd23", optional = true }
 
-aio_plugin_device_server = { package = "aio-plugin-device-server", git = "https://github.com/org-aio/aio-plugin-device.git", rev = "bee9e2ea26c564af441863de5c5cca9e2891aebc", optional = true }
+aio_plugin_device_server = { package = "aio-plugin-device-server", git = "https://github.com/org-aio/aio-plugin-device.git", rev = "2e8539fb8ce630bc88e04e4bab6d3ea4534cfd23", optional = true }
 
 [features]
 default = ["web"]
 ui = ["dep:dioxus", "dep:az-dioxus-admin-shell", "dep:az-ui-components"]
-web = ["az-plugin-host/web","ui", "dioxus/web", "dioxus/launch", "dep:gloo-net", "dep:aio_plugin_account", "dep:aio_plugin_identity_client", "dep:aio_plugin_rbac_client", "dep:aio_plugin_settings", "dep:aio_plugin_platform_links", "dep:aio_plugin_device_client"]
-desktop = ["az-plugin-host/desktop","ui", "dioxus/desktop", "dioxus/launch", "dep:gloo-net", "dep:aio_plugin_account", "dep:aio_plugin_identity_client", "dep:aio_plugin_rbac_client", "dep:aio_plugin_settings", "dep:aio_plugin_platform_links", "dep:aio_plugin_device_client"]
-server = ["dep:az-plugin-core", "dep:az-plugin-launcher", "az-plugin-host/postgres", "az-plugin-host/rhai", "az-plugin-host/typescript", "az-plugin-host/mcp", "az-plugin-host/grpc", "az-plugin-host/remote", "az-plugin-host/wasm", "az-plugin-host/sidecar", "dep:async-trait","dep:axum", "dep:sqlx", "dep:tokio", "dep:toml", "dep:tonic", "dep:aio_plugin_identity_server", "dep:aio_plugin_rbac_server", "dep:aio_plugin_device_server"]
+web = ["az-plugin-host/web","ui", "dioxus/web", "dioxus/launch", "dep:gloo-net", "dep:aio_plugin_account", "dep:aio_plugin_identity_client", "dep:aio_plugin_settings", "dep:aio_plugin_platform_links", "dep:aio_plugin_device_client"]
+desktop = ["az-plugin-host/desktop","ui", "dioxus/desktop", "dioxus/launch", "dep:gloo-net", "dep:aio_plugin_account", "dep:aio_plugin_identity_client", "dep:aio_plugin_settings", "dep:aio_plugin_platform_links", "dep:aio_plugin_device_client"]
+server = ["dep:az-plugin-core", "dep:az-plugin-launcher", "az-plugin-host/postgres", "az-plugin-host/rhai", "az-plugin-host/typescript", "az-plugin-host/mcp", "az-plugin-host/grpc", "az-plugin-host/remote", "az-plugin-host/wasm", "az-plugin-host/sidecar", "dep:async-trait","dep:axum", "dep:sqlx", "dep:tokio", "dep:toml", "dep:tonic", "dep:aio_plugin_identity_server", "dep:aio_plugin_rbac_model", "dep:aio_plugin_rbac_server", "dep:aio_plugin_device_server"]
 
 
 [lints.rust]
 unsafe_code = "forbid"
 
 [dev-dependencies]
-az-plugin-contract = { git = "https://github.com/org-aio/aio-platform.git", rev = "d494f470069c45ecfab00625745214889028c038", features = ["grpc"] }
-az-plugin-host = { git = "https://github.com/org-aio/aio-platform.git", rev = "d494f470069c45ecfab00625745214889028c038", default-features = false, features = ["test-support"] }
+az-plugin-contract = { git = "https://github.com/org-aio/aio-platform.git", rev = "1364f3cf137613406b7a5e14e2fbb38b00172faf", features = ["grpc"] }
+az-plugin-host = { git = "https://github.com/org-aio/aio-platform.git", rev = "1364f3cf137613406b7a5e14e2fbb38b00172faf", default-features = false, features = ["test-support"] }
 tempfile = "3.23.0"
-az-plugin-package = { git = "https://github.com/org-aio/aio-platform.git", rev = "d494f470069c45ecfab00625745214889028c038" }
+az-plugin-package = { git = "https://github.com/org-aio/aio-platform.git", rev = "1364f3cf137613406b7a5e14e2fbb38b00172faf" }
 kuchikiki = { version = "=0.8.8-speedreader" }
 reqwest = { version = "0.12.23", default-features = false, features = ["json", "rustls-tls", "stream"] }
 tower-http = { version = "0.6.2", features = ["fs", "compression-gzip"] }

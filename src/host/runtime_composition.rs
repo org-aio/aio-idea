@@ -13,7 +13,7 @@ use az_plugin_host::runtime::server::plugins::{
 };
 use serde::{Deserialize, Serialize};
 
-use crate::plugins::server::{AccessControlPlugin, IdentityServicePlugin};
+use crate::plugins::server::IdentityServicePlugin;
 
 #[path = "runtime_bootstrap.rs"]
 mod bootstrap;
@@ -63,8 +63,6 @@ struct Composition {
     #[serde(default)]
     evolution: Capability,
     #[serde(default)]
-    access_control: Capability,
-    #[serde(default)]
     device_tunnels: Capability,
     #[serde(default)]
     trusted_management_components: Vec<TrustedManagementComponent>,
@@ -85,7 +83,6 @@ impl Default for Composition {
             mcp: Capability::default(),
             grpc: Capability::default(),
             evolution: Capability::default(),
-            access_control: Capability::default(),
             device_tunnels: Capability::default(),
             trusted_management_components: Vec::new(),
             identity: Resource::default(),
@@ -255,12 +252,6 @@ fn select_plugins(
     );
     select(
         &mut plugins,
-        &previous.access_control,
-        &next.access_control,
-        AccessControlPlugin,
-    );
-    select(
-        &mut plugins,
         &previous.device_tunnels,
         &next.device_tunnels,
         aio_plugin_device_server::DeviceTunnelPlugin,
@@ -327,7 +318,13 @@ fn parse(bytes: &[u8]) -> Result<Composition> {
 // 只迁移持久化数据；新部署输入拒绝已退出原生组合的系统整包开关。
 fn migrate_saved(bytes: &[u8]) -> Result<Composition> {
     let mut value: serde_json::Value = serde_json::from_slice(bytes)?;
-    for name in ["dictionary", "marketplace", "files", "tenants"] {
+    for name in [
+        "dictionary",
+        "marketplace",
+        "files",
+        "tenants",
+        "access_control",
+    ] {
         if let Some(retired) = value.as_object_mut().and_then(|v| v.remove(name)) {
             let _: Capability = serde_json::from_value(retired)
                 .with_context(|| format!("旧系统插件开关格式无效: {name}"))?;

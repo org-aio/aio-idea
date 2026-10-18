@@ -15,7 +15,6 @@ pub fn client_catalog() -> anyhow::Result<ClientCatalog> {
 
     let mut builder = CatalogBuilder::new();
     aio_plugin_identity_client::register(&mut builder);
-    aio_plugin_rbac_client::register(&mut builder);
     aio_plugin_settings::register(&mut builder);
     aio_plugin_account::register(&mut builder);
     aio_plugin_platform_links::register(&mut builder);
@@ -55,8 +54,6 @@ mod tests {
             .collect::<HashSet<_>>();
 
         for page_id in [
-            "users",
-            "roles",
             "profile",
             "settings",
             "space-files",
@@ -70,21 +67,6 @@ mod tests {
         assert!(
             !account_ids.contains("marketplace"),
             "市场账户入口由安装整包贡献"
-        );
-
-        let users = catalog
-            .pages
-            .iter()
-            .find(|page| page.id == "users")
-            .expect("缺少用户管理页面");
-        assert_eq!(users.scene.id, "system");
-        assert_eq!(
-            users
-                .menu_path
-                .iter()
-                .map(|group| group.id.as_str())
-                .collect::<Vec<_>>(),
-            ["system-management"]
         );
 
         let space = catalog

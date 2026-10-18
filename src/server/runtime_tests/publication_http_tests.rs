@@ -26,7 +26,6 @@ async fn binary_cli_publishes_downloads_recovers_and_rolls_back_over_http() -> R
     let cache = temp.path().join("cache");
     let mut catalog = dill::CatalogBuilder::new();
     aio_plugin_identity_server::register(&mut catalog)?;
-    aio_plugin_tenant_server::register(&mut catalog)?;
     let catalog = catalog.build();
     let identity = aio_plugin_identity_server::service(&catalog)?;
     identity.initialize().await?;
@@ -46,9 +45,7 @@ async fn binary_cli_publishes_downloads_recovers_and_rolls_back_over_http() -> R
         &cache,
     )
     .await?;
-    let router = super::router(state.clone())?
-        .merge(aio_plugin_identity_server::router(&catalog)?)
-        .merge(aio_plugin_tenant_server::router(&catalog)?);
+    let router = super::router(state.clone())?.merge(aio_plugin_identity_server::router(&catalog)?);
     let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await?;
     let base = format!("http://{}", listener.local_addr()?);
     let server = tokio::spawn(async move { axum::serve(listener, router).await });
@@ -255,14 +252,22 @@ async fn exercise_http(
         .await?;
     sqlx::query("INSERT INTO tenant_memberships (tenant_id, user_id, display_name) SELECT $1, id, display_name FROM identity_users WHERE account = $2")
         .bind(&tenant).bind(&account).execute(pool).await?;
-    request_json(
-        &client,
-        "POST",
-        &format!("{base}/api/tenants/switch"),
-        &cookie,
-        Some(json!({"tenant_id": tenant})),
-    )
-    .await?;
+    // 租户切换由安装整包提供；这里直接更新真实会话租户并补齐管理员权限。
+    let session_id = cookie
+        .split(';')
+        .find_map(|part| part.trim().strip_prefix("aio_session="))
+        .context("缺少会话 Cookie")?;
+    sqlx::query("UPDATE auth_sessions SET tenant_id=$1 WHERE id=$2")
+        .bind(&tenant)
+        .bind(session_id)
+        .execute(pool)
+        .await?;
+    sqlx::query("INSERT INTO tenant_member_roles (tenant_id, user_id, role_id) SELECT $1, id, 'tenant-admin' FROM identity_users WHERE account=$2")
+        .bind(&tenant).bind(&account).execute(pool).await?;
+    for permission in ["plugin:manage", "tenant:manage", "rbac:manage"] {
+        sqlx::query("INSERT INTO role_permissions (tenant_id, role_id, permission) VALUES ($1,'tenant-admin',$2)")
+            .bind(&tenant).bind(permission).execute(pool).await?;
+    }
     let other = request_json(
         &client,
         "GET",

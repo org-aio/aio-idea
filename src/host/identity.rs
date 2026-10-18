@@ -1,7 +1,11 @@
 use anyhow::Result;
 use az_plugin_host::{
     authorization::AuthorizationProvider,
-    identity::{IdentityProvider, SessionContext},
+    identity::{
+        AccessControlDepartment, AccessControlOrganization, AccessControlPost,
+        AccessControlProvider, AccessControlRole, AccessControlUser, AccessControlView,
+        IdentityProvider, SessionContext,
+    },
     metering::{MeterOutcome, MeteringProvider},
 };
 use std::sync::Arc;
@@ -9,6 +13,8 @@ use std::sync::Arc;
 pub struct ProductIdentity {
     identity: Arc<aio_plugin_identity_server::IdentityService>,
     pool: sqlx::PgPool,
+    /// 产品复用权限插件同一套授权模型，避免复制 SQL 或维护第二套判据。
+    access: aio_plugin_rbac_server::AccessControlService,
 }
 
 impl ProductIdentity {
@@ -16,11 +22,13 @@ impl ProductIdentity {
         identity: Arc<aio_plugin_identity_server::IdentityService>,
         database: &str,
     ) -> Result<Self> {
+        let pool = sqlx::postgres::PgPoolOptions::new()
+            .max_connections(2)
+            .connect_lazy(database)?;
         Ok(Self {
             identity,
-            pool: sqlx::postgres::PgPoolOptions::new()
-                .max_connections(2)
-                .connect_lazy(database)?,
+            access: aio_plugin_rbac_server::AccessControlService::from_pool(pool.clone()),
+            pool,
         })
     }
 }
@@ -299,10 +307,12 @@ impl az_plugin_core::Plugin<az_plugin_host::runtime::server::plugins::RuntimeAss
                 .services
                 .bind::<dyn IdentityProvider, ProductIdentity>()
                 .bind::<dyn AuthorizationProvider, ProductIdentity>()
-                .bind::<dyn MeteringProvider, ProductIdentity>();
+                .bind::<dyn MeteringProvider, ProductIdentity>()
+                .bind::<dyn AccessControlProvider, ProductIdentity>();
             assembly.require_service::<dyn IdentityProvider>();
             assembly.require_service::<dyn AuthorizationProvider>();
             assembly.require_service::<dyn MeteringProvider>();
+            assembly.require_service::<dyn AccessControlProvider>();
             assembly.on_initialize::<Self>(|state, _| {
                 Box::pin(async move {
                     let provider = Arc::new(ProductIdentity::new(
@@ -314,6 +324,7 @@ impl az_plugin_core::Plugin<az_plugin_host::runtime::server::plugins::RuntimeAss
                         .service::<Resource<ProductIdentity>>()?
                         .provide(provider.clone())?;
                     sqlx::query("SELECT 1").execute(&provider.pool).await?;
+                    provider.access.initialize().await?;
                     Ok(())
                 })
             });
@@ -335,3 +346,172 @@ impl az_plugin_core::Plugin<az_plugin_host::runtime::server::plugins::RuntimeAss
 #[cfg(test)]
 #[path = "identity_tests.rs"]
 mod lifecycle_tests;
+
+/// 受控权限提供者：直接复用权限插件的授权模型与事务判据。
+#[async_trait::async_trait]
+impl AccessControlProvider for ProductIdentity {
+    async fn access_control_view(&self, session: &SessionContext) -> Result<AccessControlView> {
+        let view = self
+            .access
+            .view(&session.tenant_id, &session.user_id)
+            .await?;
+        Ok(to_contract_view(view))
+    }
+
+    async fn save_role(
+        &self,
+        session: &SessionContext,
+        role_id: &str,
+        permissions: &[String],
+        create: bool,
+    ) -> Result<()> {
+        self.access
+            .save_role(
+                &session.tenant_id,
+                &session.user_id,
+                role_id,
+                permissions,
+                create,
+            )
+            .await
+    }
+
+    async fn delete_role(&self, session: &SessionContext, role_id: &str) -> Result<()> {
+        self.access
+            .delete_role(&session.tenant_id, &session.user_id, role_id)
+            .await
+    }
+
+    async fn update_member(
+        &self,
+        session: &SessionContext,
+        user_id: &str,
+        display_name: &str,
+    ) -> Result<()> {
+        self.access
+            .update_member(&session.tenant_id, &session.user_id, user_id, display_name)
+            .await
+    }
+
+    async fn set_member_roles(
+        &self,
+        session: &SessionContext,
+        user_id: &str,
+        roles: &[String],
+    ) -> Result<()> {
+        self.access
+            .set_member_roles(&session.tenant_id, &session.user_id, user_id, roles, false)
+            .await
+    }
+
+    async fn remove_member(&self, session: &SessionContext, user_id: &str) -> Result<()> {
+        self.access
+            .remove_member(&session.tenant_id, &session.user_id, user_id)
+            .await
+    }
+
+    async fn authorize_member_password_reset(
+        &self,
+        session: &SessionContext,
+        user_id: &str,
+    ) -> Result<()> {
+        self.access
+            .authorize_member_password_reset(&session.tenant_id, &session.user_id, user_id)
+            .await
+    }
+
+    async fn save_department(
+        &self,
+        session: &SessionContext,
+        department: AccessControlDepartment,
+    ) -> Result<()> {
+        self.access
+            .save_department(
+                &session.tenant_id,
+                &session.user_id,
+                aio_plugin_rbac_model::SaveDepartmentRequest {
+                    id: department.id,
+                    parent_id: department.parent_id,
+                    name: department.name,
+                    leader: department.leader,
+                    phone: department.phone,
+                    email: department.email,
+                    sort_order: department.sort_order,
+                    status: department.status,
+                },
+            )
+            .await
+    }
+
+    async fn delete_department(&self, session: &SessionContext, id: &str) -> Result<()> {
+        self.access
+            .delete_department(&session.tenant_id, &session.user_id, id)
+            .await
+    }
+
+    async fn save_post(&self, session: &SessionContext, post: AccessControlPost) -> Result<()> {
+        self.access
+            .save_post(
+                &session.tenant_id,
+                &session.user_id,
+                aio_plugin_rbac_model::SavePostRequest {
+                    id: post.id,
+                    code: post.code,
+                    name: post.name,
+                    sort_order: post.sort_order,
+                    status: post.status,
+                    remark: post.remark,
+                },
+            )
+            .await
+    }
+
+    async fn delete_post(&self, session: &SessionContext, id: &str) -> Result<()> {
+        self.access
+            .delete_post(&session.tenant_id, &session.user_id, id)
+            .await
+    }
+}
+
+fn to_contract_view(view: aio_plugin_rbac_model::AccessControlView) -> AccessControlView {
+    AccessControlView {
+        users: view
+            .users
+            .into_iter()
+            .map(|user| AccessControlUser {
+                id: user.id,
+                account: user.account,
+                display_name: user.display_name,
+                roles: user.roles,
+            })
+            .collect(),
+        roles: view
+            .roles
+            .into_iter()
+            .map(|role| AccessControlRole {
+                id: role.id,
+                permissions: role.permissions,
+                member_count: role.member_count,
+            })
+            .collect(),
+        departments: view.departments.into_iter().map(to_contract_org).collect(),
+        posts: view.posts.into_iter().map(to_contract_org).collect(),
+        current_user_id: view.current_user_id,
+        grantable_permissions: view.grantable_permissions,
+    }
+}
+
+fn to_contract_org(item: aio_plugin_rbac_model::OrganizationItem) -> AccessControlOrganization {
+    AccessControlOrganization {
+        id: item.id,
+        code: item.code,
+        name: item.name,
+        parent_id: item.parent_id,
+        leader: item.leader,
+        phone: item.phone,
+        email: item.email,
+        sort_order: item.sort_order,
+        status: item.status,
+        remark: item.remark,
+    }
+}

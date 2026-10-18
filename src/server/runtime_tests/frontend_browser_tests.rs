@@ -16,7 +16,6 @@ async fn mounts_real_dioxus_binary_and_calls_component_over_browser_bridge() -> 
     let temporary = tempfile::tempdir()?;
     let mut catalog = dill::CatalogBuilder::new();
     aio_plugin_identity_server::register(&mut catalog)?;
-    aio_plugin_tenant_server::register(&mut catalog)?;
     let catalog = catalog.build();
     let identity = aio_plugin_identity_server::service(&catalog)?;
     identity.initialize().await?;
@@ -76,7 +75,6 @@ async fn mounts_real_dioxus_binary_and_calls_component_over_browser_bridge() -> 
     ensure!(dist.join("index.html").is_file(), "先构建 Web 宿主");
     let router = super::router(state)?
         .merge(aio_plugin_identity_server::router(&catalog)?)
-        .merge(aio_plugin_tenant_server::router(&catalog)?)
         .fallback_service(tower_http::services::ServeDir::new(&dist).fallback(
             tower_http::services::ServeFile::new(dist.join("index.html")),
         ))
