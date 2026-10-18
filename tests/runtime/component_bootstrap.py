@@ -119,7 +119,7 @@ def stop():
 def configure(enabled, trusted=()):
     composition = {"schema_version": 1, "wasm": {"enabled": enabled},
         **{key: {"enabled": False} for key in ["sidecar", "rhai", "typescript", "evolution",
-                                               "access_control", "tenants"]},
+                                               "access_control"]},
         "trusted_management_components": [{"git": git, "digest": bundle[1]} for bundle in trusted]}
     pending = source.with_suffix(".pending")
     pending.write_text(json.dumps(composition), encoding="utf-8")

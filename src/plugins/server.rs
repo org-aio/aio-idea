@@ -4,7 +4,6 @@ use std::sync::Arc;
 
 use aio_plugin_identity_server::IdentityService;
 use aio_plugin_rbac_server::AccessControlService;
-use aio_plugin_tenant_server::TenantService;
 use anyhow::Result;
 use az_plugin_core::{DynPlugin, Plugin, PluginFuture};
 use az_plugin_host::runtime::server::plugins::{Resource, RuntimeAssembly};
@@ -63,22 +62,12 @@ service_plugin!(
     [IdentityService],
     aio_plugin_rbac_server::router
 );
-service_plugin!(
-    TenantPlugin,
-    TenantService,
-    [],
-    [],
-    [IdentityService],
-    aio_plugin_tenant_server::router
-);
-
 /// 产品只选择具体插件类型，服务创建和初始化全部交给 RuntimeHost。
 pub fn server_plugins() -> Result<Vec<DynPlugin<RuntimeAssembly>>> {
     let mut builder = dill::CatalogBuilder::new();
     builder
         .add::<IdentityServicePlugin>()
         .add::<AccessControlPlugin>()
-        .add::<TenantPlugin>()
         .add::<aio_plugin_device_server::DeviceWebviewsPlugin>()
         .add::<aio_plugin_device_server::DeviceTunnelPlugin>();
     let catalog = builder.build();

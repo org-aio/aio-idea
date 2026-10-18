@@ -4,7 +4,6 @@ use std::sync::Mutex;
 
 use aio_plugin_identity_server::IdentityService;
 use aio_plugin_rbac_server::AccessControlService;
-use aio_plugin_tenant_server::TenantService;
 use az_plugin_host::runtime::server::RuntimeState;
 
 use super::*;
@@ -26,10 +25,21 @@ pub(super) async fn verify(
         .error_for_status()?
         .json::<Value>()
         .await?;
-    let paths = ["/api/rbac", "/api/tenants"];
+    // 租户能力已由安装整包提供，静态组合只保留权限路由。
+    let paths = ["/api/rbac"];
     assert_eq!(
         client
             .get(format!("{base}/api/files"))
+            .header("Cookie", cookie)
+            .send()
+            .await?
+            .status(),
+        404
+    );
+    // 租户接口由整包提供，未安装时静态宿主不暴露该路由。
+    assert_eq!(
+        client
+            .get(format!("{base}/api/tenants"))
             .header("Cookie", cookie)
             .send()
             .await?
@@ -54,7 +64,6 @@ pub(super) async fn verify(
         json!({
             "schema_version": 1,
             "access_control": {"enabled": false},
-            "tenants": {"enabled": false},
         }),
     )
     .await?;

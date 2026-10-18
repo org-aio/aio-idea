@@ -10,7 +10,7 @@ fn retired_system_settings_migrate_without_reenabling_other_services() -> Result
     let root = tempfile::tempdir()?;
     let source = root.path().join("composition.json");
     let cache = root.path().join("cache");
-    let old = json!({"schema_version":1,"dictionary":{"enabled":false,"restart":3},"marketplace":{"enabled":false,"restart":2},"files":{"enabled":false},"access_control":{"enabled":false},"mcp":{"enabled":false}});
+    let old = json!({"schema_version":1,"dictionary":{"enabled":false,"restart":3},"marketplace":{"enabled":false,"restart":2},"files":{"enabled":false},"tenants":{"enabled":false,"restart":1},"access_control":{"enabled":false},"mcp":{"enabled":false}});
     let bytes = serde_json::to_vec(&old)?;
     fs::write(&source, &bytes)?;
     let mut journal = ConfigurationJournal::open(&cache.join("runtime-composition"), &source)?;
@@ -51,6 +51,9 @@ fn retired_system_settings_migrate_without_reenabling_other_services() -> Result
     assert!(confirmed.get("files").is_none());
     assert!(parse(br#"{"schema_version":1,"files":{"enabled":true}}"#).is_err());
     assert!(migrate_saved(br#"{"schema_version":1,"files":{"enabled":"invalid"}}"#).is_err());
+    assert!(confirmed.get("tenants").is_none(), "租户开关随静态组合退出");
+    assert!(parse(br#"{"schema_version":1,"tenants":{"enabled":true}}"#).is_err());
+    assert!(migrate_saved(br#"{"schema_version":1,"tenants":{"enabled":"invalid"}}"#).is_err());
     Ok(())
 }
 

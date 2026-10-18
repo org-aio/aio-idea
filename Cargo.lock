@@ -89,8 +89,6 @@ dependencies = [
  "aio-plugin-rbac-client",
  "aio-plugin-rbac-server",
  "aio-plugin-settings",
- "aio-plugin-tenant-client",
- "aio-plugin-tenant-server",
  "anyhow",
  "async-trait",
  "axum",
@@ -294,52 +292,6 @@ dependencies = [
  "gloo-net",
  "serde",
  "serde_json",
-]
-
-[[package]]
-name = "aio-plugin-tenant-client"
-version = "0.1.0"
-source = "git+https://github.com/zjarlin/aio-plugin-tenant.git?rev=ba8a56cc4dbe07e0587ecf25982251165cbf83a4#ba8a56cc4dbe07e0587ecf25982251165cbf83a4"
-dependencies = [
- "aio-plugin-tenant-model 0.1.0 (git+https://github.com/zjarlin/aio-plugin-tenant.git?rev=ba8a56cc4dbe07e0587ecf25982251165cbf83a4)",
- "az-dioxus-admin-shell",
- "az-ui-components",
- "dill",
- "dioxus",
- "dioxus-icons",
- "gloo-net",
- "serde",
- "serde_json",
-]
-
-[[package]]
-name = "aio-plugin-tenant-model"
-version = "0.1.0"
-source = "git+https://github.com/zjarlin/aio-plugin-tenant.git?rev=220f676256c190b42074342d20c82da76815d1e8#220f676256c190b42074342d20c82da76815d1e8"
-dependencies = [
- "serde",
-]
-
-[[package]]
-name = "aio-plugin-tenant-model"
-version = "0.1.0"
-source = "git+https://github.com/zjarlin/aio-plugin-tenant.git?rev=ba8a56cc4dbe07e0587ecf25982251165cbf83a4#ba8a56cc4dbe07e0587ecf25982251165cbf83a4"
-dependencies = [
- "serde",
-]
-
-[[package]]
-name = "aio-plugin-tenant-server"
-version = "0.1.0"
-source = "git+https://github.com/zjarlin/aio-plugin-tenant.git?rev=220f676256c190b42074342d20c82da76815d1e8#220f676256c190b42074342d20c82da76815d1e8"
-dependencies = [
- "aio-plugin-identity-server",
- "aio-plugin-tenant-model 0.1.0 (git+https://github.com/zjarlin/aio-plugin-tenant.git?rev=220f676256c190b42074342d20c82da76815d1e8)",
- "anyhow",
- "axum",
- "dill",
- "sqlx",
- "uuid",
 ]
 
 [[package]]

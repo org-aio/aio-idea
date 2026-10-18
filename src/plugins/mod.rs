@@ -18,7 +18,6 @@ pub fn client_catalog() -> anyhow::Result<ClientCatalog> {
     aio_plugin_rbac_client::register(&mut builder);
     aio_plugin_settings::register(&mut builder);
     aio_plugin_account::register(&mut builder);
-    aio_plugin_tenant_client::register(&mut builder);
     aio_plugin_platform_links::register(&mut builder);
     aio_plugin_device_client::register(&mut builder);
     builder.validate().context("校验页面插件依赖图失败")?;
@@ -60,7 +59,6 @@ mod tests {
             "roles",
             "profile",
             "settings",
-            "tenants",
             "space-files",
             "space-terminal",
             "space-tunnels",
@@ -114,7 +112,7 @@ mod tests {
         assert_eq!(space.required_permission, None);
 
         assert!(!page_ids.contains("file-list"), "文件页面由安装整包贡献");
-        for account_id in ["profile", "settings", "tenant-switcher", "logout"] {
+        for account_id in ["profile", "settings", "logout"] {
             assert!(
                 account_ids.contains(account_id),
                 "缺少账户入口: {account_id}"

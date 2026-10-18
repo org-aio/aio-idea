@@ -38,8 +38,6 @@ aio_plugin_identity_client = { package = "aio-plugin-identity-client", git = "ht
 aio_plugin_identity_server = { package = "aio-plugin-identity-server", git = "https://github.com/zjarlin/aio-plugin-identity.git", rev = "9b585cb6a6f74b5fef006189ba23d8d71854d45b", optional = true }
 aio_plugin_rbac_client = { package = "aio-plugin-rbac-client", git = "https://github.com/zjarlin/aio-plugin-rbac.git", rev = "0966f9235cf10cbb7fecf645f5b071dfa607900b", optional = true }
 aio_plugin_rbac_server = { package = "aio-plugin-rbac-server", git = "https://github.com/zjarlin/aio-plugin-rbac.git", rev = "17689dd975f200eea33560e9b18924b487982d25", optional = true }
-aio_plugin_tenant_client = { package = "aio-plugin-tenant-client", git = "https://github.com/zjarlin/aio-plugin-tenant.git", rev = "ba8a56cc4dbe07e0587ecf25982251165cbf83a4", optional = true }
-aio_plugin_tenant_server = { package = "aio-plugin-tenant-server", git = "https://github.com/zjarlin/aio-plugin-tenant.git", rev = "220f676256c190b42074342d20c82da76815d1e8", optional = true }
 aio_plugin_platform_links = { package = "aio-plugin-platform-links", git = "https://github.com/org-aio/aio-plugin-platform-links.git", rev = "8be1263cd6a5e366fbe8ff2bf5a1f95580ccaa0a", optional = true }
 aio_plugin_device_client = { package = "aio-plugin-device-client", git = "https://github.com/org-aio/aio-plugin-device.git", rev = "bee9e2ea26c564af441863de5c5cca9e2891aebc", optional = true }
 
@@ -48,9 +46,9 @@ aio_plugin_device_server = { package = "aio-plugin-device-server", git = "https:
 [features]
 default = ["web"]
 ui = ["dep:dioxus", "dep:az-dioxus-admin-shell", "dep:az-ui-components"]
-web = ["az-plugin-host/web","ui", "dioxus/web", "dioxus/launch", "dep:gloo-net", "dep:aio_plugin_account", "dep:aio_plugin_identity_client", "dep:aio_plugin_rbac_client", "dep:aio_plugin_settings", "dep:aio_plugin_tenant_client", "dep:aio_plugin_platform_links", "dep:aio_plugin_device_client"]
-desktop = ["az-plugin-host/desktop","ui", "dioxus/desktop", "dioxus/launch", "dep:gloo-net", "dep:aio_plugin_account", "dep:aio_plugin_identity_client", "dep:aio_plugin_rbac_client", "dep:aio_plugin_settings", "dep:aio_plugin_tenant_client", "dep:aio_plugin_platform_links", "dep:aio_plugin_device_client"]
-server = ["dep:az-plugin-core", "dep:az-plugin-launcher", "az-plugin-host/postgres", "az-plugin-host/rhai", "az-plugin-host/typescript", "az-plugin-host/mcp", "az-plugin-host/grpc", "az-plugin-host/remote", "az-plugin-host/wasm", "az-plugin-host/sidecar", "dep:async-trait","dep:axum", "dep:sqlx", "dep:tokio", "dep:toml", "dep:tonic", "dep:aio_plugin_identity_server", "dep:aio_plugin_rbac_server", "dep:aio_plugin_tenant_server", "dep:aio_plugin_device_server"]
+web = ["az-plugin-host/web","ui", "dioxus/web", "dioxus/launch", "dep:gloo-net", "dep:aio_plugin_account", "dep:aio_plugin_identity_client", "dep:aio_plugin_rbac_client", "dep:aio_plugin_settings", "dep:aio_plugin_platform_links", "dep:aio_plugin_device_client"]
+desktop = ["az-plugin-host/desktop","ui", "dioxus/desktop", "dioxus/launch", "dep:gloo-net", "dep:aio_plugin_account", "dep:aio_plugin_identity_client", "dep:aio_plugin_rbac_client", "dep:aio_plugin_settings", "dep:aio_plugin_platform_links", "dep:aio_plugin_device_client"]
+server = ["dep:az-plugin-core", "dep:az-plugin-launcher", "az-plugin-host/postgres", "az-plugin-host/rhai", "az-plugin-host/typescript", "az-plugin-host/mcp", "az-plugin-host/grpc", "az-plugin-host/remote", "az-plugin-host/wasm", "az-plugin-host/sidecar", "dep:async-trait","dep:axum", "dep:sqlx", "dep:tokio", "dep:toml", "dep:tonic", "dep:aio_plugin_identity_server", "dep:aio_plugin_rbac_server", "dep:aio_plugin_device_server"]
 
 
 [lints.rust]
