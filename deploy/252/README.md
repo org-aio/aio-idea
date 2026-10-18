@@ -109,6 +109,20 @@ Agent 使用原生 v2 整包中的 Linux ELF 与 Compose 前端，Pi SDK 依赖�
 
 这条路径是受控发布器，不是公网 Git 安装器。公网运行时只安装已构建的 `wasm-component`、`page-definition` 与受限 `process` 产物，安装过程不会执行仓库脚本。CI 同时上传原始 Git commit 和所需 tree 对象；服务端离线校验对象哈希及清单、artifact 的提交归属，无需为发布回连远程 Git。健康检查和激活成功后才更新数据库市场条目。
 
+## 独立系统整包引导
+
+`aio.toml` 的 `[[bootstrap_components]]` 指向 `/opt/aio-idea/bundles/` 下的
+`marketplace.aio-plugin`、`rbac.aio-plugin` 和 `tenant.aio-plugin`。该目录位于发布
+目录之外，切换发布不会替换它；发布前必须按各仓库 README 构建、审核摘要，并确保
+`aio.toml` 的 `digest` 与整包一致。首次安装只补充未安装记录，不覆盖租户后续的
+升级、回滚、停用或卸载选择。
+
+市场管理能力还需在 `/opt/aio-idea/runtime-composition.json` 声明
+`trusted_management_components`，并在 `runtime.env` 设置
+`AIO_RUNTIME_COMPOSITION` 指向该文件。管理整包的新版本必须重新审核并单独加入信任。
+修改引导或信任配置后，如果上次启动未确认，先停服执行
+`aio-idea runtime retry`，再启动服务。
+
 ## 用户 worker 与归档
 
 账号菜单的“我的设备”仅提供设备列表、浏览器配对和撤销配对。旧“个人配置”面板、磁盘任务、归档操作及应用控制入口已退出宿主界面，由设备助手插件接管；现有同步、任务和归档接口及数据继续保留。本机执行 `aio device connect`，使用现有 AIO 账号确认一次后后台在线，不配置账号密码、SSH 或归档密码。
