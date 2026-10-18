@@ -9,7 +9,6 @@ use anyhow::{Context as _, Result};
 use az_plugin_host::runtime;
 
 #[cfg(test)]
-mod admin_browser_tests;
 pub(crate) mod application;
 #[cfg(test)]
 mod runtime_tests;

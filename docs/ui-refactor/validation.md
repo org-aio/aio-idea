@@ -54,7 +54,6 @@ AIO_TEST_KMP_FRONTEND=../aio-plugin-kmp-example/dist/frontend node tests/browser
 真实后台测试使用独立 PostgreSQL，`AIO_TEST_DATABASE_URL` 与 `AIO_DATABASE_URL` 必须指向同一测试库；设置测试启动账号和密码，禁止将这些用例指向正式业务库。发布测试额外设置 `AIO_TEST_CLI`、`AIO_PLUGIN_PUBLISH_ACCOUNTS` 和测试 `AIO_DELIVERY_TOKEN`。
 
 ```sh
-cargo test --no-default-features --features server system_management_browser_workflows -- --ignored --nocapture
 cargo test --no-default-features --features server binary_cli_publishes_downloads_recovers_and_rolls_back_over_http -- --ignored --nocapture
 cargo test --no-default-features --features server frontend_http_mounts_verified_assets_and_revokes_live_access -- --ignored --nocapture
 

@@ -50,7 +50,7 @@ Cookie 文件采用 curl 的 Netscape 格式，仅保存在本机。也可通过
 
 `counter-state.cjs` 同时被 `frontend.cjs` 和线上 `public-admin.cjs` 使用：Dioxus 本地 `+1` 在联网和断网连续点击时均不发请求；真实后端请求暂停期间，本地计数仍即时响应。显式「请求后端 +1」单独验证 Component 和租户透传，不将 UI 事件当成后端事件。
 
-`admin-rbac.cjs`、`admin-account.cjs` 通过 `system_management_browser_workflows` 测试启动真实系统插件接口，验证列表、搜索、排序、分页、表单、删除、权限撤销、密码及租户切换。仅允许本机 `aio_keepalive_test` 数据库，测试创建的临时租户由宿主清理；不要对生产环境运行这些写入用例。截图及报告位于 `target/admin-ui-test`。设置 `AIO_ADMIN_PREVIEW_PORT` 可启动隔离开发预览。
+用户与权限管理已由独立 v2 整包交付，静态管理页的 `admin-rbac.cjs`、`admin-account.cjs` 验收已移除；对应真实宿主、Sidecar、PostgreSQL 与权限撤权验收由 `aio-plugin-rbac/tests/runtime/delivery.py` 覆盖。
 
 字典已迁移到独立 v2 整包，真实 iframe 的桌面/手机 CRUD、样式和部分失败重试验收在 [字典仓库](https://github.com/org-aio/aio-plugin-dictionary/blob/main/tests/README.md) 维护。宿主不再保留依赖静态字典 API 的副本。
 
