@@ -18,10 +18,10 @@ tenants = ["default"]
 
 [[bootstrap_components]]
 path = "/opt/aio-idea/bundles/rbac.aio-plugin"
-digest = "edd19e5ad314f37f7ef4fbe9bc9c0a328f640e88f08bba08b0aebdae210bd0b6"
+digest = "67ccd7248f56edc01e0cd425ba43cb2d73141c7a1828445ac7eb2e3cd5f5e806"
 tenants = ["default"]
 
 [[bootstrap_components]]
 path = "/opt/aio-idea/bundles/tenant.aio-plugin"
-digest = "f38dad6baac36b9fa8623d6aebdedcea5459d525ac6935dd4d5e9726301dd414"
+digest = "4b589e226064e3b65fbd8df3ed2cff289fe634c1486f1bbfec5a4a47e0326453"
 tenants = ["default"]
