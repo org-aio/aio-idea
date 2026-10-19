@@ -8,7 +8,7 @@ rev = "8be1263cd6a5e366fbe8ff2bf5a1f95580ccaa0a"
 
 [[plugins]]
 git = "https://github.com/org-aio/aio-plugin-device.git"
-rev = "ebc8c34a5bdfd30cb2428210b31d327bc0cce621"
+rev = "e13e2a820742e07ec15a1bd5a2f29ef4400bd6b9"
 
 # 252 生产首次引导：整包存放在发布目录之外，避免切换发布时被替换。
 [[bootstrap_components]]

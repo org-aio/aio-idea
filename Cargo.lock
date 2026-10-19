@@ -127,7 +127,7 @@ dependencies = [
 [[package]]
 name = "aio-plugin-device-client"
 version = "0.1.0"
-source = "git+https://github.com/org-aio/aio-plugin-device.git?rev=ebc8c34a5bdfd30cb2428210b31d327bc0cce621#ebc8c34a5bdfd30cb2428210b31d327bc0cce621"
+source = "git+https://github.com/org-aio/aio-plugin-device.git?rev=e13e2a820742e07ec15a1bd5a2f29ef4400bd6b9#e13e2a820742e07ec15a1bd5a2f29ef4400bd6b9"
 dependencies = [
  "az-dioxus-admin-shell",
  "dill",
@@ -138,7 +138,7 @@ dependencies = [
 [[package]]
 name = "aio-plugin-device-server"
 version = "0.1.0"
-source = "git+https://github.com/org-aio/aio-plugin-device.git?rev=ebc8c34a5bdfd30cb2428210b31d327bc0cce621#ebc8c34a5bdfd30cb2428210b31d327bc0cce621"
+source = "git+https://github.com/org-aio/aio-plugin-device.git?rev=e13e2a820742e07ec15a1bd5a2f29ef4400bd6b9#e13e2a820742e07ec15a1bd5a2f29ef4400bd6b9"
 dependencies = [
  "anyhow",
  "async-trait",
