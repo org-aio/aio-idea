@@ -14,14 +14,14 @@ rev = "491be971196cc10364a057ada5b57a30e5a60044"
 [[bootstrap_components]]
 path = "/opt/aio-idea/bundles/marketplace.aio-plugin"
 digest = "7e3b58caf3ea5425630a0d29f74c70858423f762f9bb6a225f999c0a88717849"
-tenants = ["default"]
+tenants = ["default", "71d108ca-af94-4c4c-917e-050e5a730bde"]
 
 [[bootstrap_components]]
 path = "/opt/aio-idea/bundles/rbac.aio-plugin"
 digest = "67ccd7248f56edc01e0cd425ba43cb2d73141c7a1828445ac7eb2e3cd5f5e806"
-tenants = ["default"]
+tenants = ["default", "71d108ca-af94-4c4c-917e-050e5a730bde"]
 
 [[bootstrap_components]]
 path = "/opt/aio-idea/bundles/tenant.aio-plugin"
 digest = "4b589e226064e3b65fbd8df3ed2cff289fe634c1486f1bbfec5a4a47e0326453"
-tenants = ["default"]
+tenants = ["default", "71d108ca-af94-4c4c-917e-050e5a730bde"]

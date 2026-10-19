@@ -93,7 +93,7 @@ dependencies = [
  "async-trait",
  "axum",
  "az-dioxus-admin-shell",
- "az-plugin-contract 2026.5.10 (git+https://github.com/org-aio/aio-platform.git?rev=4e345c5f277cc1c9e258a733551de2a74bf1dfff)",
+ "az-plugin-contract 2026.5.10 (git+https://github.com/org-aio/aio-platform.git?rev=75ff65f6973025c20d952730844e9be8f923ffc8)",
  "az-plugin-core",
  "az-plugin-host",
  "az-plugin-launcher",
@@ -138,7 +138,7 @@ dependencies = [
 [[package]]
 name = "aio-plugin-device-server"
 version = "0.1.0"
-source = "git+https://github.com/org-aio/aio-plugin-device.git?rev=491be971196cc10364a057ada5b57a30e5a60044#491be971196cc10364a057ada5b57a30e5a60044"
+source = "git+https://github.com/org-aio/aio-plugin-device.git?rev=e014fc5bf7754f257539c58cba3726224bace046#e014fc5bf7754f257539c58cba3726224bace046"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -657,10 +657,10 @@ dependencies = [
 [[package]]
 name = "az-plugin-bundle"
 version = "2026.5.10"
-source = "git+https://github.com/org-aio/aio-platform.git?rev=4e345c5f277cc1c9e258a733551de2a74bf1dfff#4e345c5f277cc1c9e258a733551de2a74bf1dfff"
+source = "git+https://github.com/org-aio/aio-platform.git?rev=75ff65f6973025c20d952730844e9be8f923ffc8#75ff65f6973025c20d952730844e9be8f923ffc8"
 dependencies = [
  "anyhow",
- "az-plugin-contract 2026.5.10 (git+https://github.com/org-aio/aio-platform.git?rev=4e345c5f277cc1c9e258a733551de2a74bf1dfff)",
+ "az-plugin-contract 2026.5.10 (git+https://github.com/org-aio/aio-platform.git?rev=75ff65f6973025c20d952730844e9be8f923ffc8)",
  "az-plugin-manifest",
  "base64 0.22.1",
  "flate2",
@@ -686,7 +686,7 @@ dependencies = [
 [[package]]
 name = "az-plugin-contract"
 version = "2026.5.10"
-source = "git+https://github.com/org-aio/aio-platform.git?rev=4e345c5f277cc1c9e258a733551de2a74bf1dfff#4e345c5f277cc1c9e258a733551de2a74bf1dfff"
+source = "git+https://github.com/org-aio/aio-platform.git?rev=75ff65f6973025c20d952730844e9be8f923ffc8#75ff65f6973025c20d952730844e9be8f923ffc8"
 dependencies = [
  "anyhow",
  "jsonschema",
@@ -704,7 +704,7 @@ dependencies = [
 [[package]]
 name = "az-plugin-core"
 version = "2026.5.10"
-source = "git+https://github.com/org-aio/aio-platform.git?rev=4e345c5f277cc1c9e258a733551de2a74bf1dfff#4e345c5f277cc1c9e258a733551de2a74bf1dfff"
+source = "git+https://github.com/org-aio/aio-platform.git?rev=75ff65f6973025c20d952730844e9be8f923ffc8#75ff65f6973025c20d952730844e9be8f923ffc8"
 dependencies = [
  "anyhow",
  "dill",
@@ -713,7 +713,7 @@ dependencies = [
 [[package]]
 name = "az-plugin-delivery"
 version = "2026.5.10"
-source = "git+https://github.com/org-aio/aio-platform.git?rev=4e345c5f277cc1c9e258a733551de2a74bf1dfff#4e345c5f277cc1c9e258a733551de2a74bf1dfff"
+source = "git+https://github.com/org-aio/aio-platform.git?rev=75ff65f6973025c20d952730844e9be8f923ffc8#75ff65f6973025c20d952730844e9be8f923ffc8"
 dependencies = [
  "anyhow",
  "serde",
@@ -723,7 +723,7 @@ dependencies = [
 [[package]]
 name = "az-plugin-development"
 version = "2026.10.17"
-source = "git+https://github.com/org-aio/aio-platform.git?rev=4e345c5f277cc1c9e258a733551de2a74bf1dfff#4e345c5f277cc1c9e258a733551de2a74bf1dfff"
+source = "git+https://github.com/org-aio/aio-platform.git?rev=75ff65f6973025c20d952730844e9be8f923ffc8#75ff65f6973025c20d952730844e9be8f923ffc8"
 dependencies = [
  "anyhow",
  "az-plugin-manifest",
@@ -738,10 +738,10 @@ dependencies = [
 [[package]]
 name = "az-plugin-enhancement"
 version = "2026.5.10"
-source = "git+https://github.com/org-aio/aio-platform.git?rev=4e345c5f277cc1c9e258a733551de2a74bf1dfff#4e345c5f277cc1c9e258a733551de2a74bf1dfff"
+source = "git+https://github.com/org-aio/aio-platform.git?rev=75ff65f6973025c20d952730844e9be8f923ffc8#75ff65f6973025c20d952730844e9be8f923ffc8"
 dependencies = [
  "anyhow",
- "az-plugin-contract 2026.5.10 (git+https://github.com/org-aio/aio-platform.git?rev=4e345c5f277cc1c9e258a733551de2a74bf1dfff)",
+ "az-plugin-contract 2026.5.10 (git+https://github.com/org-aio/aio-platform.git?rev=75ff65f6973025c20d952730844e9be8f923ffc8)",
  "dill",
  "oxc_allocator",
  "oxc_ast",
@@ -761,7 +761,7 @@ dependencies = [
 [[package]]
 name = "az-plugin-host"
 version = "2026.10.17"
-source = "git+https://github.com/org-aio/aio-platform.git?rev=4e345c5f277cc1c9e258a733551de2a74bf1dfff#4e345c5f277cc1c9e258a733551de2a74bf1dfff"
+source = "git+https://github.com/org-aio/aio-platform.git?rev=75ff65f6973025c20d952730844e9be8f923ffc8#75ff65f6973025c20d952730844e9be8f923ffc8"
 dependencies = [
  "anyhow",
  "arc-swap",
@@ -769,7 +769,7 @@ dependencies = [
  "axum",
  "az-dioxus-admin-shell",
  "az-plugin-bundle",
- "az-plugin-contract 2026.5.10 (git+https://github.com/org-aio/aio-platform.git?rev=4e345c5f277cc1c9e258a733551de2a74bf1dfff)",
+ "az-plugin-contract 2026.5.10 (git+https://github.com/org-aio/aio-platform.git?rev=75ff65f6973025c20d952730844e9be8f923ffc8)",
  "az-plugin-core",
  "az-plugin-delivery",
  "az-plugin-development",
@@ -823,7 +823,7 @@ dependencies = [
 [[package]]
 name = "az-plugin-launcher"
 version = "2026.5.10"
-source = "git+https://github.com/org-aio/aio-platform.git?rev=4e345c5f277cc1c9e258a733551de2a74bf1dfff#4e345c5f277cc1c9e258a733551de2a74bf1dfff"
+source = "git+https://github.com/org-aio/aio-platform.git?rev=75ff65f6973025c20d952730844e9be8f923ffc8#75ff65f6973025c20d952730844e9be8f923ffc8"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -839,7 +839,7 @@ dependencies = [
 [[package]]
 name = "az-plugin-manifest"
 version = "2026.5.10"
-source = "git+https://github.com/org-aio/aio-platform.git?rev=4e345c5f277cc1c9e258a733551de2a74bf1dfff#4e345c5f277cc1c9e258a733551de2a74bf1dfff"
+source = "git+https://github.com/org-aio/aio-platform.git?rev=75ff65f6973025c20d952730844e9be8f923ffc8#75ff65f6973025c20d952730844e9be8f923ffc8"
 dependencies = [
  "anyhow",
  "semver",
@@ -855,7 +855,7 @@ dependencies = [
 [[package]]
 name = "az-plugin-package"
 version = "2026.5.10"
-source = "git+https://github.com/org-aio/aio-platform.git?rev=4e345c5f277cc1c9e258a733551de2a74bf1dfff#4e345c5f277cc1c9e258a733551de2a74bf1dfff"
+source = "git+https://github.com/org-aio/aio-platform.git?rev=75ff65f6973025c20d952730844e9be8f923ffc8#75ff65f6973025c20d952730844e9be8f923ffc8"
 dependencies = [
  "anyhow",
  "az-plugin-manifest",
@@ -885,13 +885,13 @@ dependencies = [
 [[package]]
 name = "az-plugin-runtime"
 version = "2026.5.10"
-source = "git+https://github.com/org-aio/aio-platform.git?rev=4e345c5f277cc1c9e258a733551de2a74bf1dfff#4e345c5f277cc1c9e258a733551de2a74bf1dfff"
+source = "git+https://github.com/org-aio/aio-platform.git?rev=75ff65f6973025c20d952730844e9be8f923ffc8#75ff65f6973025c20d952730844e9be8f923ffc8"
 dependencies = [
  "aes-gcm",
  "anyhow",
  "async-trait",
  "az-plugin-bundle",
- "az-plugin-contract 2026.5.10 (git+https://github.com/org-aio/aio-platform.git?rev=4e345c5f277cc1c9e258a733551de2a74bf1dfff)",
+ "az-plugin-contract 2026.5.10 (git+https://github.com/org-aio/aio-platform.git?rev=75ff65f6973025c20d952730844e9be8f923ffc8)",
  "futures-util",
  "getrandom 0.4.3",
  "semver",
@@ -910,7 +910,7 @@ dependencies = [
 [[package]]
 name = "az-tool"
 version = "0.1.0"
-source = "git+https://github.com/org-aio/aio-platform.git?rev=4e345c5f277cc1c9e258a733551de2a74bf1dfff#4e345c5f277cc1c9e258a733551de2a74bf1dfff"
+source = "git+https://github.com/org-aio/aio-platform.git?rev=75ff65f6973025c20d952730844e9be8f923ffc8#75ff65f6973025c20d952730844e9be8f923ffc8"
 dependencies = [
  "anyhow",
  "semver",
