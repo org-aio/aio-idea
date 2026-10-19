@@ -13,7 +13,7 @@ rev = "491be971196cc10364a057ada5b57a30e5a60044"
 # 252 生产首次引导：整包存放在发布目录之外，避免切换发布时被替换。
 [[bootstrap_components]]
 path = "/opt/aio-idea/bundles/marketplace.aio-plugin"
-digest = "5a184127206739e06bbdd80510fea3d664260aa3e35607975afe054650e777cd"
+digest = "7e3b58caf3ea5425630a0d29f74c70858423f762f9bb6a225f999c0a88717849"
 tenants = ["default"]
 
 [[bootstrap_components]]
