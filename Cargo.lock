@@ -127,7 +127,7 @@ dependencies = [
 [[package]]
 name = "aio-plugin-device-client"
 version = "0.1.0"
-source = "git+https://github.com/org-aio/aio-plugin-device.git?rev=d64e12fd4202653593621abb974e347447820a9f#d64e12fd4202653593621abb974e347447820a9f"
+source = "git+https://github.com/org-aio/aio-plugin-device.git?rev=832a4c76a687979ca6f9853244b670f7b6f6ebaf#832a4c76a687979ca6f9853244b670f7b6f6ebaf"
 dependencies = [
  "az-dioxus-admin-shell",
  "dill",

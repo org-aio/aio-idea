@@ -39,7 +39,7 @@ aio_plugin_identity_server = { package = "aio-plugin-identity-server", git = "ht
 aio_plugin_rbac_model = { package = "aio-plugin-rbac-model", git = "https://github.com/zjarlin/aio-plugin-rbac.git", rev = "3929222d2ffdf1cf970887064c31b74de06600af", optional = true }
 aio_plugin_rbac_server = { package = "aio-plugin-rbac-server", git = "https://github.com/zjarlin/aio-plugin-rbac.git", rev = "3929222d2ffdf1cf970887064c31b74de06600af", optional = true }
 aio_plugin_platform_links = { package = "aio-plugin-platform-links", git = "https://github.com/org-aio/aio-plugin-platform-links.git", rev = "8be1263cd6a5e366fbe8ff2bf5a1f95580ccaa0a", optional = true }
-aio_plugin_device_client = { package = "aio-plugin-device-client", git = "https://github.com/org-aio/aio-plugin-device.git", rev = "d64e12fd4202653593621abb974e347447820a9f", optional = true }
+aio_plugin_device_client = { package = "aio-plugin-device-client", git = "https://github.com/org-aio/aio-plugin-device.git", rev = "832a4c76a687979ca6f9853244b670f7b6f6ebaf", optional = true }
 
 aio_plugin_device_server = { package = "aio-plugin-device-server", git = "https://github.com/org-aio/aio-plugin-device.git", rev = "340c3a450a3c4e2858f9615f369406a5d3674be6", optional = true }
 
