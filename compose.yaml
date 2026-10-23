@@ -29,6 +29,10 @@ services:
     image: mcr.microsoft.com/playwright:v1.62.0-noble
     container_name: aio-idea-supervisor
     restart: unless-stopped
+    # 与旧 252 的 systemd 拓扑一致：监督器直接跑在宿主网络命名空间里。
+    # 插件容器在 --internal 隔离桥上，只有宿主命名空间能按容器 IP 直连；
+    # 若监督器自己也在 bridge 网络里，Docker 的隔离规则会丢弃这些包。
+    network_mode: host
     # root 身份运行，但组与宿主应用一致；umask 决定套接字权限（0770），
     # 让非 root 的 AIO 容器能连上监督器。
     user: "0:${AIO_APP_GID:?}"
@@ -55,6 +59,8 @@ services:
     image: mcr.microsoft.com/playwright:v1.62.0-noble
     container_name: aio-idea
     restart: unless-stopped
+    # 同监督器：宿主网络命名空间，才能与 process 插件的隔离网络互通。
+    network_mode: host
     # 用旧部署相同的数字 UID/GID，恢复的文件归属不用改写。
     user: "${AIO_APP_UID:?}:${AIO_APP_GID:?}"
     working_dir: /opt/aio-idea/releases/${AIO_RELEASE:?}
@@ -62,17 +68,15 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-    # 进程任务端点要访问本机 18080 上的网关；用 host-gateway 而不是跨 compose 网络，
-    # 避免与 sub2api 所在项目产生启动顺序耦合。
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
+    # 宿主网络下，进程任务端点直接用 127.0.0.1:18080 访问本机网关。
     environment:
-      AIO_DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
-      AIO_COMPONENT_DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/aio_plugin_components
+      # 宿主网络下数据库走 postgres 容器发布到 127.0.0.1 的端口。
+      AIO_DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@127.0.0.1:${POSTGRES_PORT:?}/${POSTGRES_DB}
+      AIO_COMPONENT_DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@127.0.0.1:${POSTGRES_PORT:?}/aio_plugin_components
       AIO_COMPONENT_HOME: /opt/aio-idea/component-storage
       AIO_RUNTIME_COMPOSITION: /opt/aio-idea/runtime-composition.json
-      AIO_WEB_HOST: 0.0.0.0
-      AIO_WEB_PORT: "8080"
+      AIO_WEB_HOST: 127.0.0.1
+      AIO_WEB_PORT: ${AIO_WEB_PORT:?}
       AIO_WEB_DIST: /opt/aio-idea/releases/${AIO_RELEASE}/web
       AIO_CONFIG: /opt/aio-idea/releases/${AIO_RELEASE}/aio.toml
       AIO_PLUGIN_CACHE: /opt/aio-idea/plugin-cache
@@ -86,7 +90,7 @@ services:
       AIO_PASSWORD_MIN_LENGTH: "8"
       AIO_PLUGIN_PUBLISH_ACCOUNTS: zjarlin
       AIO_PUBLIC_ORIGIN: ${AIO_PUBLIC_ORIGIN:?}
-      AIO_DEVICE_TUNNEL_BIND: 0.0.0.0:8091
+      AIO_DEVICE_TUNNEL_BIND: 127.0.0.1:${AIO_DEVICE_TUNNEL_PORT:?}
       AIO_DEVICE_TUNNEL_DOMAIN: ${AIO_DEVICE_TUNNEL_DOMAIN:?}
       AIO_DEVICE_TUNNEL_SCHEME: ${AIO_DEVICE_TUNNEL_SCHEME:?}
     env_file:
@@ -96,12 +100,8 @@ services:
     volumes:
       - ./data:/opt/aio-idea
       - ./run/aio-plugin-supervisor:/run/aio-plugin-supervisor:ro
-    ports:
-      # 只让本机 Caddy 反代；内网可达性由 Caddy 的 bind + remote_ip 决定。
-      - "127.0.0.1:${AIO_WEB_PORT:-3080}:8080"
-      - "127.0.0.1:${AIO_DEVICE_TUNNEL_PORT:-8091}:8091"
     healthcheck:
-      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:8080/health || exit 1"]
+      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:${AIO_WEB_PORT:?}/health || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 30
