@@ -29,9 +29,11 @@ services:
     image: mcr.microsoft.com/playwright:v1.62.0-noble
     container_name: aio-idea-supervisor
     restart: unless-stopped
-    user: "0:0"
+    # root 身份运行，但组与宿主应用一致；umask 决定套接字权限（0770），
+    # 让非 root 的 AIO 容器能连上监督器。
+    user: "0:${AIO_APP_GID:?}"
     working_dir: /opt/aio-idea/releases/${AIO_RELEASE:?}
-    command: ["/opt/aio-idea/releases/${AIO_RELEASE}/aio-idea", "supervisor"]
+    command: ["sh", "-c", "umask 0007; exec /opt/aio-idea/releases/${AIO_RELEASE}/aio-idea supervisor"]
     environment:
       AIO_PLUGIN_CACHE: /opt/aio-idea/plugin-cache
       AIO_PLUGIN_SUPERVISOR_SOCKET: /run/aio-plugin-supervisor/supervisor.sock
