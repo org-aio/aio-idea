@@ -4,7 +4,7 @@ set -euo pipefail
 
 export COPYFILE_DISABLE=1
 
-readonly deploy_host="${AIO_DEPLOY_HOST:-root@192.168.31.252}"
+readonly deploy_host="${AIO_DEPLOY_HOST:?请设置 AIO_DEPLOY_HOST，例如 root@<部署主机>}"
 readonly deploy_root="${AIO_DEPLOY_ROOT:-/opt/aio-idea}"
 readonly target="x86_64-unknown-linux-gnu.2.17"
 readonly target_directory="${target%%.*}"
